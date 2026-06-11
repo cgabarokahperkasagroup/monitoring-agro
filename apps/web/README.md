@@ -54,3 +54,6 @@ src/
   PDF di Ringkasan, Kegiatan, dan Rekonsiliasi. Excel = CSV (UTF-8 BOM + `sep=,`,
   tanpa dependensi). PDF = `jspdf` + `jspdf-autotable`, di-`import()` dinamis
   agar tidak membebani bundle utama. Ekspor mengikuti filter aktif di layar.
+- **Laporan PDF lengkap** (`downloadReportPdf`): tombol di Ringkasan — judul +
+  KPI + **grafik** (ditangkap dari DOM via `html2canvas`) + tabel kegiatan dalam
+  satu PDF. Semua lib (jspdf/autotable/html2canvas) di-`import()` dinamis.

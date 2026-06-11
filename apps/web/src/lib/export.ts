@@ -66,3 +66,97 @@ export async function downloadPdf<T>(opts: {
   });
   doc.save(`${opts.filename}.pdf`);
 }
+
+// =====================================================================
+// Laporan PDF LENGKAP: judul + KPI + grafik (ditangkap dari DOM via
+// html2canvas) + tabel. Semua lib di-import dinamis (lazy).
+// =====================================================================
+export type ReportTable = { heading: string; columns: ExportColumn<any>[]; rows: any[] };
+
+export async function downloadReportPdf(opts: {
+  title: string;
+  subtitle?: string;
+  filename: string;
+  kpis?: { label: string; value: string }[];
+  chartEls?: (HTMLElement | null | undefined)[];
+  tables?: ReportTable[];
+}) {
+  const [{ default: jsPDF }, { default: autoTable }, { default: html2canvas }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+    import('html2canvas'),
+  ]);
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const M = 40;
+  const contentW = pageW - M * 2;
+  let y = M;
+
+  const lastY = () => (doc as any).lastAutoTable?.finalY ?? y;
+  const ensure = (need: number) => {
+    if (y + need > pageH - M) {
+      doc.addPage();
+      y = M;
+    }
+  };
+
+  doc.setFontSize(16);
+  doc.setTextColor(15, 23, 42);
+  doc.text(opts.title, M, y);
+  y += 18;
+  if (opts.subtitle) {
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(opts.subtitle, M, y);
+    y += 14;
+  }
+  doc.setFontSize(9);
+  doc.setTextColor(150);
+  doc.text(`Dibuat: ${new Date().toLocaleString('id-ID')}`, M, y);
+  y += 18;
+
+  if (opts.kpis?.length) {
+    autoTable(doc, {
+      startY: y,
+      head: [['Metrik', 'Nilai']],
+      body: opts.kpis.map((k) => [k.label, k.value]),
+      styles: { fontSize: 9, cellPadding: 5 },
+      headStyles: { fillColor: [21, 128, 61] },
+      margin: { left: M, right: M },
+      tableWidth: contentW * 0.62,
+    });
+    y = lastY() + 20;
+  }
+
+  for (const el of opts.chartEls ?? []) {
+    if (!el) continue;
+    const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true });
+    const imgW = contentW;
+    const imgH = (canvas.height / canvas.width) * imgW;
+    ensure(imgH);
+    doc.addImage(canvas.toDataURL('image/png'), 'PNG', M, y, imgW, imgH);
+    y += imgH + 20;
+  }
+
+  for (const t of opts.tables ?? []) {
+    ensure(70);
+    doc.setFontSize(12);
+    doc.setTextColor(15, 23, 42);
+    doc.text(t.heading, M, y);
+    y += 6;
+    autoTable(doc, {
+      startY: y + 4,
+      head: [t.columns.map((c) => c.header)],
+      body: t.rows.map((r) => t.columns.map((c) => cell(c.value(r)))),
+      styles: { fontSize: 8, cellPadding: 4 },
+      headStyles: { fillColor: [21, 128, 61] },
+      alternateRowStyles: { fillColor: [247, 249, 248] },
+      margin: { left: M, right: M },
+    });
+    y = lastY() + 20;
+  }
+
+  doc.save(`${opts.filename}.pdf`);
+}

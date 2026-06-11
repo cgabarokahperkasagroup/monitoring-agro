@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useActivities, type ActivityRow } from '@/lib/queries';
 import { ActivityDetailModal } from '@/components/ActivityDetailModal';
@@ -7,7 +7,7 @@ import { ExportButtons } from '@/components/ExportButtons';
 import { Badge, Kpi, QueryState } from '@/components/ui';
 import { buildDailySeries } from '@/lib/daily';
 import { daysAgoIso, fmtDate, n, todayIso } from '@/lib/format';
-import type { ExportColumn } from '@/lib/export';
+import { downloadReportPdf, type ExportColumn } from '@/lib/export';
 
 const RINGKASAN_COLUMNS: ExportColumn<ActivityRow>[] = [
   { header: 'Tanggal', value: (r) => fmtDate(r.activity_date) },
@@ -49,6 +49,33 @@ export default function Ringkasan() {
   const recent = (data ?? []).slice(0, 8);
   const daily = useMemo(() => buildDailySeries(data ?? [], from, todayIso()), [data, from]);
 
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [reportBusy, setReportBusy] = useState(false);
+  const periodLabel = `Periode ${fmtDate(from)} – ${fmtDate(todayIso())} (${days} hari)`;
+
+  async function onReport() {
+    setReportBusy(true);
+    try {
+      await downloadReportPdf({
+        title: 'Laporan Ringkasan — Monitoring Agro',
+        subtitle: periodLabel,
+        filename: `laporan-ringkasan_${days}hari`,
+        kpis: [
+          { label: 'Janjang panen', value: n(k.janjangPanen) },
+          { label: 'Estimasi tonase panen (kg)', value: n(Math.round(k.tonasePanen)) },
+          { label: 'Janjang dikirim', value: n(k.janjangKirim) },
+          { label: 'Selisih janjang (panen − dikirim)', value: n(k.janjangPanen - k.janjangKirim) },
+          { label: 'Jumlah catatan panen', value: n(k.jmlPanen) },
+          { label: 'Jumlah pengiriman', value: n(k.jmlKirim) },
+        ],
+        chartEls: [chartRef.current],
+        tables: [{ heading: 'Kegiatan (periode)', columns: RINGKASAN_COLUMNS, rows: data ?? [] }],
+      });
+    } finally {
+      setReportBusy(false);
+    }
+  }
+
   return (
     <div>
       <div className="tabs">
@@ -60,6 +87,14 @@ export default function Ringkasan() {
         <span className="muted" style={{ alignSelf: 'center', fontSize: 12 }}>
           sejak {fmtDate(from)}
         </span>
+        <button
+          className="btn btn-sm btn-primary"
+          style={{ marginLeft: 'auto' }}
+          disabled={reportBusy || isLoading}
+          onClick={onReport}
+        >
+          {reportBusy ? 'Menyiapkan…' : '⬇ Laporan PDF (grafik)'}
+        </button>
       </div>
 
       <QueryState isLoading={isLoading} error={error}>
@@ -74,7 +109,7 @@ export default function Ringkasan() {
           />
         </div>
 
-        <div style={{ marginTop: 20 }}>
+        <div style={{ marginTop: 20 }} ref={chartRef}>
           <DailyProductionChart data={daily} />
         </div>
 
