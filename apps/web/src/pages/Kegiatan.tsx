@@ -1,8 +1,23 @@
 import { useMemo, useState } from 'react';
 import { useActivities, useDivisions, useEstates, type ActivityFilters, type ActivityRow } from '@/lib/queries';
 import { ActivityDetailModal } from '@/components/ActivityDetailModal';
+import { ExportButtons } from '@/components/ExportButtons';
 import { Badge, Field, QueryState } from '@/components/ui';
 import { daysAgoIso, fmtDate, n, todayIso } from '@/lib/format';
+import type { ExportColumn } from '@/lib/export';
+
+const KEGIATAN_COLUMNS: ExportColumn<ActivityRow>[] = [
+  { header: 'Tanggal', value: (r) => fmtDate(r.activity_date) },
+  { header: 'Jenis', value: (r) => (r.activity_type === 'panen' ? 'Panen' : 'Pengiriman') },
+  { header: 'Estate', value: (r) => r.estate_name },
+  { header: 'Divisi', value: (r) => r.division_name },
+  { header: 'Blok', value: (r) => r.block_code },
+  { header: 'Janjang', value: (r) => r.total_janjang },
+  { header: 'Est. tonase', value: (r) => r.est_tonase },
+  { header: 'SPB/Tujuan', value: (r) => r.spb_number ?? r.destination_pks },
+  { header: 'Status', value: (r) => r.status },
+  { header: 'Jml foto', value: (r) => r.photo_count },
+];
 
 export default function Kegiatan() {
   const [type, setType] = useState<ActivityFilters['type']>('all');
@@ -69,6 +84,13 @@ export default function Kegiatan() {
       <QueryState isLoading={isLoading} error={error} isEmpty={rows.length === 0} emptyText="Tidak ada kegiatan sesuai filter.">
         <div className="row-between" style={{ marginBottom: 10 }}>
           <span className="muted">{rows.length} kegiatan</span>
+          <ExportButtons
+            title="Daftar Kegiatan — Monitoring Agro"
+            subtitle={`Periode ${fmtDate(from)} – ${fmtDate(to)}`}
+            filename={`kegiatan_${from}_sd_${to}`}
+            columns={KEGIATAN_COLUMNS}
+            rows={rows}
+          />
         </div>
         <div className="table-wrap">
           <table>

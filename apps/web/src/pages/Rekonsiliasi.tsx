@@ -9,7 +9,47 @@ import {
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/auth';
 import { Badge, QueryState } from '@/components/ui';
+import { ExportButtons } from '@/components/ExportButtons';
 import { daysAgoIso, fmtDate, n, n2, todayIso } from '@/lib/format';
+import type { ExportColumn } from '@/lib/export';
+
+const r2 = (x: number) => Number(x.toFixed(2));
+
+const REKON_SUMMARY_COLUMNS: ExportColumn<ReconRow>[] = [
+  { header: 'Divisi', value: (r) => r.division_name },
+  { header: 'Janjang panen', value: (r) => r.panen_janjang },
+  { header: 'Janjang angkut', value: (r) => r.kirim_janjang },
+  { header: 'Selisih janjang', value: (r) => r.panen_janjang - r.kirim_janjang },
+  {
+    header: 'Selisih janjang %',
+    value: (r) => (r.panen_janjang > 0 ? r2(((r.panen_janjang - r.kirim_janjang) / r.panen_janjang) * 100) : ''),
+  },
+  { header: 'Est. muat (kg)', value: (r) => Math.round(r.kirim_tonase) },
+  { header: 'Diterima PKS (kg)', value: (r) => (r.reconciled_count > 0 ? Math.round(r.terima_tonase) : '') },
+  {
+    header: 'Susut tonase (kg)',
+    value: (r) => (r.reconciled_count > 0 ? Math.round(r.kirim_tonase - r.terima_tonase) : ''),
+  },
+  {
+    header: 'Susut %',
+    value: (r) =>
+      r.reconciled_count > 0 && r.kirim_tonase > 0
+        ? r2(((r.kirim_tonase - r.terima_tonase) / r.kirim_tonase) * 100)
+        : '',
+  },
+  { header: 'Rekon', value: (r) => `${r.reconciled_count}/${r.delivery_count}` },
+];
+
+const REKON_DELIVERY_COLUMNS: ExportColumn<DeliveryRow>[] = [
+  { header: 'Tanggal', value: (r) => fmtDate(r.activity_date) },
+  { header: 'SPB', value: (r) => r.spb_number },
+  { header: 'Divisi', value: (r) => r.division_name },
+  { header: 'Tujuan PKS', value: (r) => r.destination_pks },
+  { header: 'Est. muat (kg)', value: (r) => r.est_tonase_muat },
+  { header: 'Final PKS (kg)', value: (r) => r.net_tonase_pks },
+  { header: 'Selisih %', value: (r) => r.variance_pct },
+  { header: 'Status', value: (r) => r.recon_status ?? 'belum' },
+];
 
 type Tone = 'neutral' | 'ok' | 'warn' | 'danger';
 
@@ -93,10 +133,19 @@ function SummaryTab({ from, to }: { from: string; to: string }) {
 
   return (
     <>
-      <p className="muted" style={{ marginTop: 0, fontSize: 12.5 }}>
-        Agregat per divisi. <strong>Selisih janjang</strong> = panen − dikirim (belum terangkut/susut lapangan).{' '}
-        <strong>Susut tonase</strong> = estimasi muat − tonase final PKS (hanya pengiriman yang sudah dicatat finalnya).
-      </p>
+      <div className="row-between" style={{ alignItems: 'flex-start', gap: 16 }}>
+        <p className="muted" style={{ marginTop: 0, fontSize: 12.5 }}>
+          Agregat per divisi. <strong>Selisih janjang</strong> = panen − dikirim (belum terangkut/susut lapangan).{' '}
+          <strong>Susut tonase</strong> = estimasi muat − tonase final PKS (hanya pengiriman yang sudah dicatat finalnya).
+        </p>
+        <ExportButtons
+          title="Rekonsiliasi Ringkasan (Panen → Angkut → Terima)"
+          subtitle={`Periode ${fmtDate(from)} – ${fmtDate(to)}`}
+          filename={`rekonsiliasi-ringkasan_${from}_sd_${to}`}
+          columns={REKON_SUMMARY_COLUMNS}
+          rows={rows}
+        />
+      </div>
       <QueryState isLoading={isLoading} error={error} isEmpty={rows.length === 0} emptyText="Belum ada data pada periode ini.">
         <div className="table-wrap">
           <table>
@@ -233,10 +282,19 @@ function DeliveryTab({ from, to }: { from: string; to: string }) {
 
   return (
     <>
-      <p className="muted" style={{ marginTop: 0, fontSize: 12.5 }}>
-        Masukkan tonase final dari timbangan pabrik (PKS). Selisih dihitung terhadap estimasi muat;
-        &lt; 2% dianggap <strong>cocok</strong>, selebihnya <strong>selisih</strong>.
-      </p>
+      <div className="row-between" style={{ alignItems: 'flex-start', gap: 16 }}>
+        <p className="muted" style={{ marginTop: 0, fontSize: 12.5 }}>
+          Masukkan tonase final dari timbangan pabrik (PKS). Selisih dihitung terhadap estimasi muat;
+          &lt; 2% dianggap <strong>cocok</strong>, selebihnya <strong>selisih</strong>.
+        </p>
+        <ExportButtons
+          title="Rekonsiliasi Per Pengiriman"
+          subtitle={`Periode ${fmtDate(from)} – ${fmtDate(to)}`}
+          filename={`rekonsiliasi-pengiriman_${from}_sd_${to}`}
+          columns={REKON_DELIVERY_COLUMNS}
+          rows={rows}
+        />
+      </div>
       {rowError ? <div className="error-box" style={{ marginBottom: 14 }}>{rowError}</div> : null}
       <QueryState isLoading={isLoading} error={error} isEmpty={rows.length === 0} emptyText="Belum ada pengiriman pada periode ini.">
         <div className="table-wrap">

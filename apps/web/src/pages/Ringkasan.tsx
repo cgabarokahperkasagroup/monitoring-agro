@@ -2,8 +2,20 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useActivities, type ActivityRow } from '@/lib/queries';
 import { ActivityDetailModal } from '@/components/ActivityDetailModal';
+import { ExportButtons } from '@/components/ExportButtons';
 import { Badge, Kpi, QueryState } from '@/components/ui';
 import { daysAgoIso, fmtDate, n, todayIso } from '@/lib/format';
+import type { ExportColumn } from '@/lib/export';
+
+const RINGKASAN_COLUMNS: ExportColumn<ActivityRow>[] = [
+  { header: 'Tanggal', value: (r) => fmtDate(r.activity_date) },
+  { header: 'Jenis', value: (r) => (r.activity_type === 'panen' ? 'Panen' : 'Pengiriman') },
+  { header: 'Divisi', value: (r) => r.division_name },
+  { header: 'Blok', value: (r) => r.block_code },
+  { header: 'Janjang', value: (r) => r.total_janjang },
+  { header: 'Est. tonase', value: (r) => r.est_tonase },
+  { header: 'Status', value: (r) => r.status },
+];
 
 const PERIODS = [
   { days: 7, label: '7 hari' },
@@ -61,7 +73,16 @@ export default function Ringkasan() {
 
         <div className="row-between section-title">
           <span>Kegiatan Terbaru</span>
-          <Link to="/kegiatan" className="btn btn-sm">Lihat semua</Link>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <ExportButtons
+              title="Ringkasan Kegiatan — Monitoring Agro"
+              subtitle={`Periode ${fmtDate(from)} – ${fmtDate(todayIso())} (${days} hari)`}
+              filename={`ringkasan-kegiatan_${days}hari`}
+              columns={RINGKASAN_COLUMNS}
+              rows={data ?? []}
+            />
+            <Link to="/kegiatan" className="btn btn-sm">Lihat semua</Link>
+          </div>
         </div>
 
         {recent.length === 0 ? (

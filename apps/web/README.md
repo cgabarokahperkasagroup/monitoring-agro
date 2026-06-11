@@ -46,3 +46,7 @@ src/
   variance < 2% → `matched`, selebihnya `discrepancy`.
 - Pengelolaan role/scope & master data CRUD penuh menyusul (butuh hak admin);
   scaffold ini fokus pemantauan + rekonsiliasi sesuai MVP.
+- **Ekspor** (`lib/export.ts`, `components/ExportButtons.tsx`): tombol Excel &
+  PDF di Ringkasan, Kegiatan, dan Rekonsiliasi. Excel = CSV (UTF-8 BOM + `sep=,`,
+  tanpa dependensi). PDF = `jspdf` + `jspdf-autotable`, di-`import()` dinamis
+  agar tidak membebani bundle utama. Ekspor mengikuti filter aktif di layar.
