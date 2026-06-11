@@ -242,3 +242,8 @@ tbody tr.clickable { cursor: pointer; }
   white-space: pre-wrap; word-break: break-word;
 }
 @media (max-width: 640px) { .audit-diff { grid-template-columns: 1fr; } }
+
+/* ---- Peta (Leaflet) ---- */
+.map-wrap { height: 560px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--card-border); }
+.leaflet-container { font: inherit; }
+.map-wrap .leaflet-popup-content { font-size: 13px; }

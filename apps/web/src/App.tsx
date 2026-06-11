@@ -1,8 +1,11 @@
-import type { ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Layout } from '@/components/Layout';
 import { Spinner } from '@/components/ui';
+
+// Peta memuat Leaflet (besar) -> lazy agar tidak membebani bundle utama.
+const Peta = lazy(() => import('@/pages/Peta'));
 import Login from '@/pages/Login';
 import Ringkasan from '@/pages/Ringkasan';
 import Kegiatan from '@/pages/Kegiatan';
@@ -43,6 +46,14 @@ export default function App() {
         <Route path="/produktivitas" element={<Produktivitas />} />
         <Route path="/pemupukan" element={<Pemupukan />} />
         <Route path="/rekonsiliasi" element={<Rekonsiliasi />} />
+        <Route
+          path="/peta"
+          element={
+            <Suspense fallback={<div className="loading"><Spinner /></div>}>
+              <Peta />
+            </Suspense>
+          }
+        />
         <Route path="/master" element={<Master />} />
         <Route path="/pengguna" element={<Pengguna />} />
         <Route path="/sistem" element={<Sistem />} />

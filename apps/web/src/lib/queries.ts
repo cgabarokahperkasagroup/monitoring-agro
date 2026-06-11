@@ -685,3 +685,61 @@ export function useDeviceSyncStatus() {
     },
   });
 }
+
+// ---- Sebaran GPS kegiatan (untuk peta) ----
+export type GeoActivity = {
+  id: string;
+  activity_type: string;
+  activity_date: string;
+  lat: number;
+  lng: number;
+  division_name: string | null;
+  block_code: string | null;
+  janjang: number | null;
+};
+
+export function useActivitiesGeo(filters: ActivityFilters) {
+  return useQuery({
+    queryKey: ['activities-geo', filters],
+    queryFn: async (): Promise<GeoActivity[]> => {
+      let q = supabase
+        .from('activities')
+        .select(
+          'id, activity_type, activity_date, gps_lat, gps_lng, divisions(name), blocks(code), harvest_records(total_janjang), delivery_records(total_janjang)',
+        )
+        .not('gps_lat', 'is', null)
+        .not('gps_lng', 'is', null)
+        .is('deleted_at', null)
+        .order('activity_date', { ascending: false })
+        .limit(2000);
+      if (filters.type && filters.type !== 'all') q = q.eq('activity_type', filters.type);
+      if (filters.estateId) q = q.eq('estate_id', filters.estateId);
+      if (filters.divisionId) q = q.eq('division_id', filters.divisionId);
+      if (filters.from) q = q.gte('activity_date', filters.from);
+      if (filters.to) q = q.lte('activity_date', filters.to);
+
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? [])
+        .map((r: any): GeoActivity | null => {
+          const lat = Number(r.gps_lat);
+          const lng = Number(r.gps_lng);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+          const isPanen = r.activity_type === 'panen';
+          const h = one<any>(r.harvest_records);
+          const d = one<any>(r.delivery_records);
+          return {
+            id: r.id,
+            activity_type: r.activity_type,
+            activity_date: r.activity_date,
+            lat,
+            lng,
+            division_name: one<any>(r.divisions)?.name ?? null,
+            block_code: one<any>(r.blocks)?.code ?? null,
+            janjang: isPanen ? (h?.total_janjang ?? null) : (d?.total_janjang ?? null),
+          };
+        })
+        .filter((x): x is GeoActivity => x !== null);
+    },
+  });
+}

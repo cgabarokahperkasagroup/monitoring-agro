@@ -34,6 +34,7 @@ src/
     Login.tsx
     Ringkasan.tsx       KPI + grafik produksi harian + kegiatan terbaru
     Kegiatan.tsx        tabel kegiatan + filter (jenis/estate/divisi/tanggal)
+    Peta.tsx            peta sebaran GPS kegiatan (Leaflet/OSM, lazy-loaded)
     Produktivitas.tsx   bar chart per divisi (janjang) & top karyawan (output)
     Rekonsiliasi.tsx    pengiriman vs tonase final PKS (catat + status cocok/selisih)
     Pemupukan.tsx       realisasi vs rencana pemupukan + editor rencana (admin)
