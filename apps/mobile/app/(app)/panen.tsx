@@ -14,6 +14,7 @@ import { today } from '@/lib/id';
 import { PhotoField } from '@/lib/PhotoField';
 import type { LocalPhoto } from '@/lib/photos/storage';
 import { processPendingUploads } from '@/lib/photos/uploader';
+import { useDeviceCoords } from '@/lib/location';
 import { Card, Field, PickerField, TextField } from '@/lib/ui';
 import { colors, font, space } from '@/lib/theme';
 
@@ -50,6 +51,7 @@ export default function PanenScreen() {
 
   const [att, setAtt] = useState<AttRow[]>([]);
   const [photos, setPhotos] = useState<LocalPhoto[]>([]);
+  const { coords: gps, status: gpsStatus } = useDeviceCoords();
   const [saving, setSaving] = useState(false);
 
   const block = useMemo(() => blocks.find((b) => b.id === blockId), [blocks, blockId]);
@@ -96,6 +98,7 @@ export default function PanenScreen() {
         },
         attendance,
         photos,
+        gps,
       });
       // Coba upload foto sekarang bila online (kalau offline, antri otomatis).
       void processPendingUploads();
@@ -227,6 +230,18 @@ export default function PanenScreen() {
         <PhotoField photos={photos} onChange={setPhotos} />
       </Field>
 
+      <Field label="Lokasi GPS (otomatis)">
+        <Text style={styles.gps}>
+          {gpsStatus === 'ok' && gps
+            ? `📍 ${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)}`
+            : gpsStatus === 'loading'
+              ? 'Mengambil lokasi…'
+              : gpsStatus === 'denied'
+                ? 'Izin lokasi ditolak — kegiatan tetap tersimpan tanpa GPS.'
+                : 'Lokasi tidak tersedia — tersimpan tanpa GPS.'}
+        </Text>
+      </Field>
+
       <Field label="Catatan (opsional)">
         <TextField value={notes} onChangeText={setNotes} placeholder="Keterangan tambahan…" multiline />
       </Field>
@@ -243,4 +258,5 @@ const styles = StyleSheet.create({
   attHint: { fontSize: font.sm, color: colors.textFaint },
   attRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm, marginBottom: space.sm },
   removeBtn: { width: 36, height: 52, alignItems: 'center', justifyContent: 'center' },
+  gps: { fontSize: font.sm, color: colors.textMuted },
 });

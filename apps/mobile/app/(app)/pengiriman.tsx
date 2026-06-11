@@ -13,6 +13,7 @@ import { today } from '@/lib/id';
 import { PhotoField } from '@/lib/PhotoField';
 import type { LocalPhoto } from '@/lib/photos/storage';
 import { processPendingUploads } from '@/lib/photos/uploader';
+import { useDeviceCoords } from '@/lib/location';
 import { Card, Field, PickerField, TextField } from '@/lib/ui';
 import { colors, font, space } from '@/lib/theme';
 
@@ -41,6 +42,7 @@ export default function PengirimanScreen() {
   const [departTime, setDepartTime] = useState('');
   const [notes, setNotes] = useState('');
   const [photos, setPhotos] = useState<LocalPhoto[]>([]);
+  const { coords: gps, status: gpsStatus } = useDeviceCoords();
   const [saving, setSaving] = useState(false);
 
   const tph = useMemo(() => tphList.find((t) => t.id === tphId), [tphList, tphId]);
@@ -69,6 +71,7 @@ export default function PengirimanScreen() {
           depart_time: departTime.trim() || null,
         },
         photos,
+        gps,
       });
       void processPendingUploads();
       Alert.alert('Tersimpan', 'Pengiriman tersimpan di perangkat & akan disinkron saat online.', [
@@ -157,6 +160,18 @@ export default function PengirimanScreen() {
         <PhotoField photos={photos} onChange={setPhotos} />
       </Field>
 
+      <Field label="Lokasi GPS (otomatis)">
+        <Text style={styles.gps}>
+          {gpsStatus === 'ok' && gps
+            ? `📍 ${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)}`
+            : gpsStatus === 'loading'
+              ? 'Mengambil lokasi…'
+              : gpsStatus === 'denied'
+                ? 'Izin lokasi ditolak — tersimpan tanpa GPS.'
+                : 'Lokasi tidak tersedia — tersimpan tanpa GPS.'}
+        </Text>
+      </Field>
+
       <Field label="Catatan (opsional)">
         <TextField value={notes} onChangeText={setNotes} placeholder="Keterangan tambahan…" multiline />
       </Field>
@@ -169,4 +184,5 @@ const styles = StyleSheet.create({
   row2: { flexDirection: 'row', gap: space.md },
   col: { flex: 1 },
   hint: { fontSize: font.xs, color: colors.textMuted },
+  gps: { fontSize: font.sm, color: colors.textMuted },
 });

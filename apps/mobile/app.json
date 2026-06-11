@@ -37,6 +37,12 @@
           "photosPermission": "Aplikasi mengakses galeri untuk melampirkan foto bukti kegiatan.",
           "cameraPermission": "Aplikasi mengakses kamera untuk mengambil foto bukti kegiatan."
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Aplikasi merekam lokasi GPS saat menyimpan kegiatan (peta sebaran)."
+        }
       ]
     ],
     "experiments": {

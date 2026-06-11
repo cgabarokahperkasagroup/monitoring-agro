@@ -7,6 +7,7 @@
 import { db } from '../powersync/system';
 import { newId, nowIso } from '../id';
 import { persistPhotos, type LocalPhoto, type PersistedPhoto } from '../photos/storage';
+import type { Coords } from '../location';
 import type { Block, Tph } from './types';
 
 const SOURCE = 'mobile';
@@ -63,6 +64,7 @@ export type HarvestInput = {
   };
   attendance: { employee_id: string; output_qty: number | null }[];
   photos: LocalPhoto[];
+  gps?: Coords | null;
 };
 
 export async function saveHarvest(input: HarvestInput): Promise<string> {
@@ -78,8 +80,8 @@ export async function saveHarvest(input: HarvestInput): Promise<string> {
       `INSERT INTO activities
          (id, activity_type, activity_date, organization_id, estate_id,
           division_id, block_id, tph_id, status, created_by, notes,
-          client_uuid, source_device, created_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          gps_lat, gps_lng, client_uuid, source_device, created_at, updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         activityId,
         'panen',
@@ -92,6 +94,8 @@ export async function saveHarvest(input: HarvestInput): Promise<string> {
         'draft',
         userId,
         input.notes?.trim() || null,
+        input.gps?.lat ?? null,
+        input.gps?.lng ?? null,
         newId(),
         SOURCE,
         ts,
@@ -151,6 +155,7 @@ export type DeliveryInput = {
     depart_time: string | null;
   };
   photos: LocalPhoto[];
+  gps?: Coords | null;
 };
 
 export async function saveDelivery(input: DeliveryInput): Promise<string> {
@@ -165,8 +170,8 @@ export async function saveDelivery(input: DeliveryInput): Promise<string> {
       `INSERT INTO activities
          (id, activity_type, activity_date, organization_id, estate_id,
           division_id, tph_id, status, created_by, notes,
-          client_uuid, source_device, created_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          gps_lat, gps_lng, client_uuid, source_device, created_at, updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         activityId,
         'pengiriman',
@@ -178,6 +183,8 @@ export async function saveDelivery(input: DeliveryInput): Promise<string> {
         'draft',
         userId,
         input.notes?.trim() || null,
+        input.gps?.lat ?? null,
+        input.gps?.lng ?? null,
         newId(),
         SOURCE,
         ts,
