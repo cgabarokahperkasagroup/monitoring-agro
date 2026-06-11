@@ -11,6 +11,9 @@ import { useBlocks, useDivisions, useEmployees, useTph } from '@/lib/db/hooks';
 import { num, saveHarvest } from '@/lib/db/write';
 import { FormScreen } from '@/lib/FormScaffold';
 import { today } from '@/lib/id';
+import { PhotoField } from '@/lib/PhotoField';
+import type { LocalPhoto } from '@/lib/photos/storage';
+import { processPendingUploads } from '@/lib/photos/uploader';
 import { Card, Field, PickerField, TextField } from '@/lib/ui';
 import { colors, font, space } from '@/lib/theme';
 
@@ -46,6 +49,7 @@ export default function PanenScreen() {
   const [notes, setNotes] = useState('');
 
   const [att, setAtt] = useState<AttRow[]>([]);
+  const [photos, setPhotos] = useState<LocalPhoto[]>([]);
   const [saving, setSaving] = useState(false);
 
   const block = useMemo(() => blocks.find((b) => b.id === blockId), [blocks, blockId]);
@@ -91,7 +95,10 @@ export default function PanenScreen() {
           premi: num(premi),
         },
         attendance,
+        photos,
       });
+      // Coba upload foto sekarang bila online (kalau offline, antri otomatis).
+      void processPendingUploads();
       Alert.alert('Tersimpan', 'Panen tersimpan di perangkat & akan disinkron saat online.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
@@ -215,6 +222,10 @@ export default function PanenScreen() {
           ))
         )}
       </Card>
+
+      <Field label="Foto bukti (opsional)">
+        <PhotoField photos={photos} onChange={setPhotos} />
+      </Field>
 
       <Field label="Catatan (opsional)">
         <TextField value={notes} onChangeText={setNotes} placeholder="Keterangan tambahan…" multiline />

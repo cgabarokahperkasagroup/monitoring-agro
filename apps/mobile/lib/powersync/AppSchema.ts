@@ -140,6 +140,21 @@ const attachments = new Table({
   created_at: column.text,
 });
 
+// LOCAL-ONLY (tidak disinkron): antrian upload biner foto ke Supabase Storage.
+// Metadata foto disimpan di tabel `attachments` (disinkron). Baris di sini
+// dihapus setelah file berhasil di-upload. localOnly => tidak masuk CRUD sync.
+const pending_uploads = new Table(
+  {
+    activity_id: column.text,
+    storage_path: column.text,
+    local_uri: column.text,
+    content_type: column.text,
+    attempts: column.integer,
+    created_at: column.text,
+  },
+  { localOnly: true },
+);
+
 const pruning_records = new Table({
   activity_id: column.text,
   total_pokok: column.integer,
@@ -196,6 +211,7 @@ export const AppSchema = new Schema({
   fertilizing_records,
   maintenance_records,
   profiles,
+  pending_uploads,
 });
 
 export type Database = (typeof AppSchema)['types'];

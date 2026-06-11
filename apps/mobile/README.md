@@ -38,6 +38,22 @@ lib/
 > kompatibel PowerSync). Untuk naik SDK: `npx expo install expo@latest` lalu
 > `npx expo install --fix`.
 
+## Foto bukti (attachments) — offline-aman
+Foto opsional pada form Panen/Pengiriman (`lib/PhotoField.tsx`, kamera/galeri).
+Alur saat simpan kegiatan:
+1. Foto dikompres (resize 1280px, JPEG ~0.6) & disalin ke `documentDirectory`
+   (`lib/photos/storage.ts`).
+2. Dalam satu transaksi lokal: insert baris `attachments` (disinkron, berisi
+   `storage_path`) **+** baris `pending_uploads` (tabel **local-only**, antrian biner).
+3. `lib/photos/uploader.ts` meng-upload file ke Supabase Storage bucket
+   `attachments` saat online (dipicu `useAttachmentSync` di `(app)/_layout`
+   ketika konek, dan setelah simpan). Sukses → baris antrian & file lokal dihapus.
+
+Konvensi path objek (cocok dengan policy migration **016**):
+`{division_id}/{activity_id}/{photoId}.jpg` — akses Storage dibatasi per divisi.
+Deps: `expo-image-picker`, `expo-image-manipulator`, `expo-file-system`,
+`base64-arraybuffer`. Izin kamera/galeri dikonfigurasi di `app.json` (plugin).
+
 ---
 
 ## Wiring PowerSync ↔ Supabase (referensi)

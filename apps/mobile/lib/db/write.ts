@@ -6,9 +6,37 @@
 // =====================================================================
 import { db } from '../powersync/system';
 import { newId, nowIso } from '../id';
+import { persistPhotos, type LocalPhoto, type PersistedPhoto } from '../photos/storage';
 import type { Block, Tph } from './types';
 
 const SOURCE = 'mobile';
+
+// Sisipkan metadata foto (tabel attachments, disinkron) + antrian upload biner
+// (pending_uploads, local-only) dalam transaksi yang sama dengan kegiatan.
+function insertAttachments(
+  tx: { execute: (sql: string, params: unknown[]) => Promise<unknown> },
+  activityId: string,
+  userId: string,
+  persisted: PersistedPhoto[],
+  ts: string,
+) {
+  return Promise.all(
+    persisted.flatMap((ph) => [
+      tx.execute(
+        `INSERT INTO attachments
+           (id, activity_id, storage_path, kind, created_by, created_at)
+         VALUES (?,?,?,?,?,?)`,
+        [newId(), activityId, ph.storage_path, 'photo', userId, ts],
+      ),
+      tx.execute(
+        `INSERT INTO pending_uploads
+           (id, activity_id, storage_path, local_uri, content_type, attempts, created_at)
+         VALUES (?,?,?,?,?,?,?)`,
+        [ph.id, activityId, ph.storage_path, ph.local_uri, ph.content_type, 0, ts],
+      ),
+    ]),
+  );
+}
 
 // Konversi input teks -> number | null (kosong = null, koma -> titik).
 export function num(v: string): number | null {
@@ -34,12 +62,16 @@ export type HarvestInput = {
     premi: number | null;
   };
   attendance: { employee_id: string; output_qty: number | null }[];
+  photos: LocalPhoto[];
 };
 
 export async function saveHarvest(input: HarvestInput): Promise<string> {
   const { block, userId } = input;
   const activityId = newId();
   const ts = nowIso();
+
+  // Kompres & simpan foto ke penyimpanan lokal SEBELUM transaksi DB (IO async).
+  const persisted = await persistPhotos(activityId, block.division_id, input.photos);
 
   await db.writeTransaction(async (tx) => {
     await tx.execute(
@@ -97,6 +129,8 @@ export async function saveHarvest(input: HarvestInput): Promise<string> {
         [newId(), activityId, line.employee_id, 1, line.output_qty, 'janjang', ts, ts],
       );
     }
+
+    await insertAttachments(tx, activityId, userId, persisted, ts);
   });
 
   return activityId;
@@ -116,12 +150,15 @@ export type DeliveryInput = {
     est_tonase_muat: number | null;
     depart_time: string | null;
   };
+  photos: LocalPhoto[];
 };
 
 export async function saveDelivery(input: DeliveryInput): Promise<string> {
   const { tph, userId } = input;
   const activityId = newId();
   const ts = nowIso();
+
+  const persisted = await persistPhotos(activityId, tph.division_id, input.photos);
 
   await db.writeTransaction(async (tx) => {
     await tx.execute(
@@ -170,6 +207,8 @@ export async function saveDelivery(input: DeliveryInput): Promise<string> {
         ts,
       ],
     );
+
+    await insertAttachments(tx, activityId, userId, persisted, ts);
   });
 
   return activityId;

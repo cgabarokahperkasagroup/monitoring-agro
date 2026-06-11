@@ -10,6 +10,9 @@ import { useDivisions, useTph } from '@/lib/db/hooks';
 import { num, saveDelivery } from '@/lib/db/write';
 import { FormScreen } from '@/lib/FormScaffold';
 import { today } from '@/lib/id';
+import { PhotoField } from '@/lib/PhotoField';
+import type { LocalPhoto } from '@/lib/photos/storage';
+import { processPendingUploads } from '@/lib/photos/uploader';
 import { Card, Field, PickerField, TextField } from '@/lib/ui';
 import { colors, font, space } from '@/lib/theme';
 
@@ -37,6 +40,7 @@ export default function PengirimanScreen() {
   const [tonase, setTonase] = useState('');
   const [departTime, setDepartTime] = useState('');
   const [notes, setNotes] = useState('');
+  const [photos, setPhotos] = useState<LocalPhoto[]>([]);
   const [saving, setSaving] = useState(false);
 
   const tph = useMemo(() => tphList.find((t) => t.id === tphId), [tphList, tphId]);
@@ -64,7 +68,9 @@ export default function PengirimanScreen() {
           est_tonase_muat: num(tonase),
           depart_time: departTime.trim() || null,
         },
+        photos,
       });
+      void processPendingUploads();
       Alert.alert('Tersimpan', 'Pengiriman tersimpan di perangkat & akan disinkron saat online.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
@@ -146,6 +152,10 @@ export default function PengirimanScreen() {
           Tonase final dari timbangan pabrik diisi/direkonsiliasi belakangan.
         </Text>
       </Card>
+
+      <Field label="Foto bukti (opsional)">
+        <PhotoField photos={photos} onChange={setPhotos} />
+      </Field>
 
       <Field label="Catatan (opsional)">
         <TextField value={notes} onChangeText={setNotes} placeholder="Keterangan tambahan…" multiline />

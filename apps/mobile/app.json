@@ -30,7 +30,14 @@
     },
     "plugins": [
       "expo-router",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Aplikasi mengakses galeri untuk melampirkan foto bukti kegiatan.",
+          "cameraPermission": "Aplikasi mengakses kamera untuk mengambil foto bukti kegiatan."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false,
