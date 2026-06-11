@@ -10,6 +10,7 @@ const NAV = [
   { to: '/rekonsiliasi', label: 'Rekonsiliasi', icon: '⚖' },
   { to: '/master', label: 'Data Master', icon: '🗂' },
   { to: '/pengguna', label: 'Pengguna', icon: '👤' },
+  { to: '/laporan-terjadwal', label: 'Laporan Terjadwal', icon: '⏰' },
   { to: '/sistem', label: 'Sistem', icon: '🛡' },
 ];
 
@@ -22,6 +23,7 @@ const TITLES: Record<string, { title: string; sub: string }> = {
   '/rekonsiliasi': { title: 'Rekonsiliasi Pengiriman', sub: 'Panen → angkut → terima pabrik' },
   '/master': { title: 'Data Master', sub: 'Estate, divisi, blok, karyawan' },
   '/pengguna': { title: 'Pengguna & Akses', sub: 'Role dan cakupan estate/divisi' },
+  '/laporan-terjadwal': { title: 'Laporan Terjadwal', sub: 'Otomatis via pg_cron + unduh CSV' },
   '/sistem': { title: 'Sistem', sub: 'Audit log & status sinkron perangkat' },
 };
 

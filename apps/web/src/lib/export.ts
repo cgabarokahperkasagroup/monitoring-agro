@@ -35,6 +35,23 @@ export function downloadCsv<T>(filename: string, columns: ExportColumn<T>[], row
   triggerDownload(new Blob(['﻿' + content], { type: 'text/csv;charset=utf-8;' }), `${filename}.csv`);
 }
 
+// CSV dari array objek (kolom diturunkan dari kunci baris pertama).
+export function downloadCsvFromRows(filename: string, rows: Record<string, unknown>[]) {
+  if (rows.length === 0) {
+    downloadCsv(filename, [{ header: 'info', value: () => 'tidak ada data' }], [{}]);
+    return;
+  }
+  const keys = Object.keys(rows[0]);
+  const columns: ExportColumn<Record<string, unknown>>[] = keys.map((k) => ({
+    header: k,
+    value: (r) => {
+      const v = r[k];
+      return v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : (v as string | number);
+    },
+  }));
+  downloadCsv(filename, columns, rows);
+}
+
 export async function downloadPdf<T>(opts: {
   title: string;
   filename: string;

@@ -743,3 +743,58 @@ export function useActivitiesGeo(filters: ActivityFilters) {
     },
   });
 }
+
+// ---- Laporan terjadwal ----
+export type ReportSchedule = {
+  id: string;
+  name: string;
+  report_type: string;
+  estate_id: string | null;
+  division_id: string | null;
+  frequency: string;
+  enabled: boolean;
+  last_run_at: string | null;
+};
+
+export function useReportSchedules() {
+  return useQuery({
+    queryKey: ['report-schedules'],
+    queryFn: async (): Promise<ReportSchedule[]> => {
+      const { data, error } = await supabase
+        .from('report_schedules')
+        .select('id, name, report_type, estate_id, division_id, frequency, enabled, last_run_at')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as ReportSchedule[];
+    },
+  });
+}
+
+export type ReportRun = {
+  id: string;
+  schedule_id: string | null;
+  report_type: string;
+  period_from: string;
+  period_to: string;
+  row_count: number;
+  generated_at: string;
+  summary: Record<string, unknown>[];
+};
+
+export function useReportRuns(limit = 50) {
+  return useQuery({
+    queryKey: ['report-runs', limit],
+    queryFn: async (): Promise<ReportRun[]> => {
+      const { data, error } = await supabase
+        .from('report_runs')
+        .select('id, schedule_id, report_type, period_from, period_to, row_count, generated_at, summary')
+        .order('generated_at', { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return (data ?? []).map((r: any): ReportRun => ({
+        ...r,
+        summary: Array.isArray(r.summary) ? r.summary : [],
+      }));
+    },
+  });
+}

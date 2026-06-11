@@ -4,8 +4,9 @@ import { useAuth } from '@/lib/auth';
 import { Layout } from '@/components/Layout';
 import { Spinner } from '@/components/ui';
 
-// Peta memuat Leaflet (besar) -> lazy agar tidak membebani bundle utama.
+// Halaman berat/jarang -> lazy agar tidak membebani bundle utama.
 const Peta = lazy(() => import('@/pages/Peta'));
+const LaporanTerjadwal = lazy(() => import('@/pages/LaporanTerjadwal'));
 import Login from '@/pages/Login';
 import Ringkasan from '@/pages/Ringkasan';
 import Kegiatan from '@/pages/Kegiatan';
@@ -56,6 +57,14 @@ export default function App() {
         />
         <Route path="/master" element={<Master />} />
         <Route path="/pengguna" element={<Pengguna />} />
+        <Route
+          path="/laporan-terjadwal"
+          element={
+            <Suspense fallback={<div className="loading"><Spinner /></div>}>
+              <LaporanTerjadwal />
+            </Suspense>
+          }
+        />
         <Route path="/sistem" element={<Sistem />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
