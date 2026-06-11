@@ -25,7 +25,9 @@ Jalankan berurutan (tiap file = 1 migration, idempoten/aman diulang):
 | 016 | `016_storage_attachments.sql` | Bucket Storage `attachments` + policy foto (per-divisi) |
 | 017 | `017_fertilizing_plans.sql` | Rencana pemupukan per divisi/material/bulan (web-only) |
 | 018 | `018_scheduled_reports.sql` | Laporan terjadwal: tabel + fungsi + **pg_cron** harian |
+| 019 | `019_report_email.sql` | Kolom penerima email & penanda kirim (Resend) |
 | — | `powersync_sync_rules.yaml` | Dipasang di **PowerSync Dashboard**, bukan Postgres |
+| — | `functions/agro-email-report/` | Edge Function kirim laporan via **Resend** (set `RESEND_API_KEY`) |
 
 > Catatan: migration 011–015 (perbaikan & publication PowerSync) sudah
 > diterapkan; 013 (role PowerSync berpassword) ada di `powersync/role.sql`

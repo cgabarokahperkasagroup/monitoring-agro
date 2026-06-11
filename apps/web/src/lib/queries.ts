@@ -754,6 +754,7 @@ export type ReportSchedule = {
   frequency: string;
   enabled: boolean;
   last_run_at: string | null;
+  email_recipients: string[] | null;
 };
 
 export function useReportSchedules() {
@@ -762,7 +763,7 @@ export function useReportSchedules() {
     queryFn: async (): Promise<ReportSchedule[]> => {
       const { data, error } = await supabase
         .from('report_schedules')
-        .select('id, name, report_type, estate_id, division_id, frequency, enabled, last_run_at')
+        .select('id, name, report_type, estate_id, division_id, frequency, enabled, last_run_at, email_recipients')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data ?? []) as ReportSchedule[];
@@ -779,6 +780,7 @@ export type ReportRun = {
   row_count: number;
   generated_at: string;
   summary: Record<string, unknown>[];
+  emailed_at: string | null;
 };
 
 export function useReportRuns(limit = 50) {
@@ -787,7 +789,7 @@ export function useReportRuns(limit = 50) {
     queryFn: async (): Promise<ReportRun[]> => {
       const { data, error } = await supabase
         .from('report_runs')
-        .select('id, schedule_id, report_type, period_from, period_to, row_count, generated_at, summary')
+        .select('id, schedule_id, report_type, period_from, period_to, row_count, generated_at, summary, emailed_at')
         .order('generated_at', { ascending: false })
         .limit(limit);
       if (error) throw error;

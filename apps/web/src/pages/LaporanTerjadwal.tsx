@@ -67,8 +67,14 @@ export default function LaporanTerjadwal() {
   const [freq, setFreq] = useState('weekly');
   const [estateId, setEstateId] = useState('');
   const [divisionId, setDivisionId] = useState('');
+  const [recipients, setRecipients] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+
+  const parseRecipients = (s: string) => {
+    const list = s.split(',').map((x) => x.trim()).filter(Boolean);
+    return list.length ? list : null;
+  };
 
   const divisionOptions = useMemo(
     () => (divisions ?? []).filter((d) => !estateId || d.estate_id === estateId),
@@ -90,6 +96,7 @@ export default function LaporanTerjadwal() {
         estate_id: estateId || null,
         division_id: divisionId || null,
         enabled: true,
+        email_recipients: parseRecipients(recipients),
         created_by: session?.user.id ?? null,
       });
       if (error) throw error;
@@ -97,6 +104,7 @@ export default function LaporanTerjadwal() {
     onSuccess: () => {
       setErr(null);
       setName('');
+      setRecipients('');
       invalidate();
     },
     onError: (e: unknown) => setErr((e as Error)?.message ?? 'Gagal menyimpan jadwal.'),
@@ -152,6 +160,31 @@ export default function LaporanTerjadwal() {
       invalidate();
     },
     onError: (e: unknown) => setErr((e as Error)?.message ?? 'Gagal menjalankan jadwal.'),
+  });
+
+  const sendEmail = useMutation({
+    mutationFn: async (runId: string) => {
+      const { data, error } = await supabase.functions.invoke('agro-email-report', { body: { run_id: runId } });
+      if (error) {
+        let msg = error.message;
+        try {
+          const ctx = (error as unknown as { context?: { json?: () => Promise<{ error?: string }> } }).context;
+          const b = ctx?.json ? await ctx.json() : null;
+          if (b?.error) msg = b.error;
+        } catch {
+          /* abaikan */
+        }
+        throw new Error(msg);
+      }
+      if ((data as { error?: string } | null)?.error) throw new Error((data as { error: string }).error);
+      return data;
+    },
+    onSuccess: () => {
+      setErr(null);
+      setInfo('Email laporan terkirim.');
+      invalidate();
+    },
+    onError: (e: unknown) => setErr((e as Error)?.message ?? 'Gagal mengirim email.'),
   });
 
   if (!isAdmin) {
@@ -211,6 +244,14 @@ export default function LaporanTerjadwal() {
               {divisionOptions.map((d) => (<option key={d.id} value={d.id}>{d.name}</option>))}
             </select>
           </Field>
+          <Field label="Email penerima (pisah koma)">
+            <input
+              className="input"
+              value={recipients}
+              onChange={(e) => setRecipients(e.target.value)}
+              placeholder="manajer@barokah.test, admin@barokah.test"
+            />
+          </Field>
           <button className="btn btn-primary" disabled={addSchedule.isPending || !name.trim()} onClick={() => addSchedule.mutate()}>
             + Tambah jadwal
           </button>
@@ -222,7 +263,7 @@ export default function LaporanTerjadwal() {
               <thead>
                 <tr>
                   <th>Nama</th><th>Jenis</th><th>Frekuensi</th><th>Cakupan</th>
-                  <th>Status</th><th>Terakhir jalan</th><th></th>
+                  <th>Email</th><th>Status</th><th>Terakhir jalan</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -232,6 +273,9 @@ export default function LaporanTerjadwal() {
                     <td>{typeLabel(s.report_type)}</td>
                     <td>{freqLabel(s.frequency)}</td>
                     <td className="muted">{estateName(s.estate_id)} · {divisionName(s.division_id)}</td>
+                    <td className="muted" title={(s.email_recipients ?? []).join(', ')}>
+                      {s.email_recipients?.length ? `${s.email_recipients.length} penerima` : '—'}
+                    </td>
                     <td><Badge tone={s.enabled ? 'ok' : 'neutral'}>{s.enabled ? 'Aktif' : 'Nonaktif'}</Badge></td>
                     <td title={fmtDateTime(s.last_run_at)}>{s.last_run_at ? fmtDateTime(s.last_run_at) : '—'}</td>
                     <td>
@@ -249,6 +293,8 @@ export default function LaporanTerjadwal() {
         </QueryState>
         <p className="muted" style={{ fontSize: 12, marginTop: 12, marginBottom: 0 }}>
           Otomatis: pg_cron menjalankan jadwal aktif tiap hari (01:05 UTC). Hasil muncul di Riwayat Laporan.
+          Email memakai Resend — set secret <code>RESEND_API_KEY</code> (opsional <code>REPORT_FROM_EMAIL</code>)
+          di Supabase agar tombol ✉ Email berfungsi.
         </p>
       </Card>
 
@@ -259,7 +305,8 @@ export default function LaporanTerjadwal() {
             <table>
               <thead>
                 <tr>
-                  <th>Dibuat</th><th>Jenis</th><th>Periode</th><th className="num">Baris</th><th>Sumber</th><th></th>
+                  <th>Dibuat</th><th>Jenis</th><th>Periode</th><th className="num">Baris</th>
+                  <th>Sumber</th><th>Email</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -271,13 +318,29 @@ export default function LaporanTerjadwal() {
                     <td className="num">{r.row_count}</td>
                     <td className="muted">{r.schedule_id ? 'Jadwal' : 'Manual'}</td>
                     <td>
-                      <button
-                        className="btn btn-sm btn-primary"
-                        disabled={r.row_count === 0}
-                        onClick={() => downloadCsvFromRows(`laporan_${r.report_type}_${r.period_from}_sd_${r.period_to}`, r.summary)}
-                      >
-                        ⬇ CSV
-                      </button>
+                      {r.emailed_at ? (
+                        <Badge tone="ok">Terkirim</Badge>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          className="btn btn-sm"
+                          disabled={r.row_count === 0}
+                          onClick={() => downloadCsvFromRows(`laporan_${r.report_type}_${r.period_from}_sd_${r.period_to}`, r.summary)}
+                        >
+                          ⬇ CSV
+                        </button>
+                        <button
+                          className="btn btn-sm btn-primary"
+                          disabled={sendEmail.isPending}
+                          onClick={() => sendEmail.mutate(r.id)}
+                        >
+                          ✉ Email
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
