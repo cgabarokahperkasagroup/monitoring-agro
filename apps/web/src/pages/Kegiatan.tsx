@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { useActivities, useDivisions, useEstates, type ActivityFilters } from '@/lib/queries';
+import { useActivities, useDivisions, useEstates, type ActivityFilters, type ActivityRow } from '@/lib/queries';
+import { ActivityDetailModal } from '@/components/ActivityDetailModal';
 import { Badge, Field, QueryState } from '@/components/ui';
 import { daysAgoIso, fmtDate, n, todayIso } from '@/lib/format';
 
@@ -9,6 +10,7 @@ export default function Kegiatan() {
   const [divisionId, setDivisionId] = useState('');
   const [from, setFrom] = useState(daysAgoIso(30));
   const [to, setTo] = useState(todayIso());
+  const [detail, setDetail] = useState<ActivityRow | null>(null);
 
   const { data: estates } = useEstates();
   const { data: divisions } = useDivisions();
@@ -81,11 +83,12 @@ export default function Kegiatan() {
                 <th className="num">Est. tonase</th>
                 <th>SPB / Tujuan</th>
                 <th>Status</th>
+                <th>Foto</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id}>
+                <tr key={r.id} className="clickable" onClick={() => setDetail(r)}>
                   <td>{fmtDate(r.activity_date)}</td>
                   <td>
                     <Badge tone={r.activity_type === 'panen' ? 'ok' : 'info'}>
@@ -99,12 +102,18 @@ export default function Kegiatan() {
                   <td className="num">{n(r.est_tonase)}</td>
                   <td>{r.spb_number ?? r.destination_pks ?? '—'}</td>
                   <td className="muted">{r.status ?? '—'}</td>
+                  <td>{r.photo_count > 0 ? <Badge tone="neutral">📷 {r.photo_count}</Badge> : '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        <p className="muted" style={{ fontSize: 12, marginTop: 10 }}>
+          Klik baris untuk melihat detail & foto bukti.
+        </p>
       </QueryState>
+
+      <ActivityDetailModal activity={detail} onClose={() => setDetail(null)} />
     </div>
   );
 }

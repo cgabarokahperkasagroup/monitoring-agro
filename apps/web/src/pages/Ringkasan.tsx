@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useActivities } from '@/lib/queries';
+import { useActivities, type ActivityRow } from '@/lib/queries';
+import { ActivityDetailModal } from '@/components/ActivityDetailModal';
 import { Badge, Kpi, QueryState } from '@/components/ui';
 import { daysAgoIso, fmtDate, n, todayIso } from '@/lib/format';
 
@@ -12,6 +13,7 @@ const PERIODS = [
 
 export default function Ringkasan() {
   const [days, setDays] = useState(30);
+  const [detail, setDetail] = useState<ActivityRow | null>(null);
   const from = daysAgoIso(days);
   const { data, isLoading, error } = useActivities({ type: 'all', from, to: todayIso() });
 
@@ -75,11 +77,12 @@ export default function Ringkasan() {
                   <th>Blok</th>
                   <th className="num">Janjang</th>
                   <th>Status</th>
+                  <th>Foto</th>
                 </tr>
               </thead>
               <tbody>
                 {recent.map((r) => (
-                  <tr key={r.id}>
+                  <tr key={r.id} className="clickable" onClick={() => setDetail(r)}>
                     <td>{fmtDate(r.activity_date)}</td>
                     <td>
                       <Badge tone={r.activity_type === 'panen' ? 'ok' : 'info'}>
@@ -90,6 +93,7 @@ export default function Ringkasan() {
                     <td>{r.block_code ?? '—'}</td>
                     <td className="num">{n(r.total_janjang)}</td>
                     <td className="muted">{r.status ?? '—'}</td>
+                    <td>{r.photo_count > 0 ? <Badge tone="neutral">📷 {r.photo_count}</Badge> : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -97,6 +101,8 @@ export default function Ringkasan() {
           </div>
         )}
       </QueryState>
+
+      <ActivityDetailModal activity={detail} onClose={() => setDetail(null)} />
     </div>
   );
 }

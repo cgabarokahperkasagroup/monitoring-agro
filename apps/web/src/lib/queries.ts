@@ -40,6 +40,7 @@ export type ActivityRow = {
   est_tonase: number | null;
   spb_number: string | null;
   destination_pks: string | null;
+  photo_count: number;
 };
 
 export function useEstates() {
@@ -100,7 +101,8 @@ const ACTIVITY_SELECT = `
   estate_id, division_id,
   estates(name), divisions(name), blocks(code),
   harvest_records(total_janjang, est_tonase),
-  delivery_records(spb_number, total_janjang, est_tonase_muat, destination_pks)
+  delivery_records(spb_number, total_janjang, est_tonase_muat, destination_pks),
+  attachments(id)
 `;
 
 function mapActivity(r: any): ActivityRow {
@@ -120,7 +122,52 @@ function mapActivity(r: any): ActivityRow {
     est_tonase: isPanen ? (h?.est_tonase ?? null) : (d?.est_tonase_muat ?? null),
     spb_number: d?.spb_number ?? null,
     destination_pks: d?.destination_pks ?? null,
+    photo_count: Array.isArray(r.attachments) ? r.attachments.length : 0,
   };
+}
+
+// Foto sebuah kegiatan: ambil metadata attachments lalu buat signed URL
+// (bucket 'attachments' privat). enabled hanya saat detail dibuka.
+export type AttachmentPhoto = {
+  id: string;
+  url: string | null;
+  kind: string | null;
+  created_at: string | null;
+};
+
+export function useActivityPhotos(activityId: string | null) {
+  return useQuery({
+    queryKey: ['activity-photos', activityId],
+    enabled: !!activityId,
+    queryFn: async (): Promise<AttachmentPhoto[]> => {
+      const { data: rows, error } = await supabase
+        .from('attachments')
+        .select('id, storage_path, kind, created_at')
+        .eq('activity_id', activityId as string)
+        .order('created_at');
+      if (error) throw error;
+      const list = (rows ?? []) as {
+        id: string;
+        storage_path: string;
+        kind: string | null;
+        created_at: string | null;
+      }[];
+      if (list.length === 0) return [];
+
+      const { data: signed, error: sErr } = await supabase.storage
+        .from('attachments')
+        .createSignedUrls(list.map((r) => r.storage_path), 3600);
+      if (sErr) throw sErr;
+
+      const urlByPath = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
+      return list.map((r) => ({
+        id: r.id,
+        url: urlByPath.get(r.storage_path) ?? null,
+        kind: r.kind,
+        created_at: r.created_at,
+      }));
+    },
+  });
 }
 
 export function useActivities(filters: ActivityFilters) {
