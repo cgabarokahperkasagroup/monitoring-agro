@@ -22,7 +22,13 @@ Jalankan berurutan (tiap file = 1 migration, idempoten/aman diulang):
 | 008 | `008_rls_policies.sql` | Aktifkan RLS + semua policy |
 | 009 | `009_business_triggers.sql` | Penjaga role, stempel verifikasi, audit status |
 | 010 | `010_sync_support_views.sql` | View pendukung sinkron PowerSync |
+| 016 | `016_storage_attachments.sql` | Bucket Storage `attachments` + policy foto (per-divisi) |
 | — | `powersync_sync_rules.yaml` | Dipasang di **PowerSync Dashboard**, bukan Postgres |
+
+> Catatan: migration 011–015 (perbaikan & publication PowerSync) sudah
+> diterapkan; 013 (role PowerSync berpassword) ada di `powersync/role.sql`
+> dan dijalankan manual. Migration 016 mengatur Storage foto `attachments`
+> (path objek `{division_id}/{activity_id}/{file}`; akses dibatasi per divisi).
 
 ## 2. Diagram Relasi (ERD)
 
