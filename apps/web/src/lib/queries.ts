@@ -263,8 +263,10 @@ export type ProfileRow = {
   full_name: string | null;
   role: string | null;
   is_active: boolean | null;
-  scopes: { scope_type: string; scope_id: string }[];
+  scopes: UserScope[];
 };
+
+export type UserScope = { id: string; scope_type: 'org' | 'estate' | 'division'; scope_id: string };
 
 export function useProfiles() {
   return useQuery({
@@ -272,7 +274,7 @@ export function useProfiles() {
     queryFn: async (): Promise<ProfileRow[]> => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, role, is_active, user_scopes(scope_type, scope_id)')
+        .select('id, full_name, role, is_active, user_scopes(id, scope_type, scope_id)')
         .order('full_name');
       if (error) throw error;
       return (data ?? []).map((r: any): ProfileRow => ({
@@ -282,6 +284,19 @@ export function useProfiles() {
         is_active: r.is_active,
         scopes: Array.isArray(r.user_scopes) ? r.user_scopes : [],
       }));
+    },
+  });
+}
+
+export type Organization = { id: string; name: string };
+
+export function useOrganizations() {
+  return useQuery({
+    queryKey: ['organizations'],
+    queryFn: async (): Promise<Organization[]> => {
+      const { data, error } = await supabase.from('organizations').select('id, name').order('name');
+      if (error) throw error;
+      return (data ?? []) as Organization[];
     },
   });
 }

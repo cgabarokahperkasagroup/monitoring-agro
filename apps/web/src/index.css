@@ -160,6 +160,7 @@ tbody tr:hover { background: var(--canvas); }
 .tab { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-weight: 600; font-size: 13px; color: var(--muted); }
 .tab.active { background: var(--primary-soft); border-color: var(--primary-soft); color: var(--primary-dark); }
 tbody tr.clickable { cursor: pointer; }
+.scope-row { border: 1px solid var(--card-border); border-radius: var(--radius-sm); padding: 8px 12px; }
 
 /* ---- Modal ---- */
 .modal-backdrop {
