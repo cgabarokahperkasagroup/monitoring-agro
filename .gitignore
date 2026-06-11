@@ -1,0 +1,17 @@
+# OS / editor
+.DS_Store
+
+# Node
+node_modules/
+
+# Env
+.env
+.env.local
+
+# Build
+dist/
+.expo/
+
+# Misc artifacts
+*.zip
+ziBA7Ldq

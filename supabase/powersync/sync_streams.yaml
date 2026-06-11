@@ -1,0 +1,87 @@
+# =====================================================================
+# Monitoring Agro — PowerSync SYNC STREAMS (edition 3, format BARU)
+# Tempel SELURUH isi file ini ke editor "Sync Streams" di dashboard,
+# klik VALIDATE lalu DEPLOY.
+#
+# Catatan desain:
+#  - Tabel di schema "agro" (schema-qualified).
+#  - Akses dihitung dari tabel dasar (user_scopes + divisions), BUKAN view,
+#    karena Sync Streams hanya bisa membaca tabel yang direplikasi.
+#  - CTE "my_divisions" = daftar divisi yang boleh diakses user, dihitung
+#    dari scope-nya (division / estate / org). Pola CTE + auto_subscribe
+#    dianjurkan PowerSync agar jumlah bucket efisien.
+#  - Untuk MOBILE (mandor/asisten/manager lapangan). ADMIN/MANAJEMEN pakai
+#    dashboard WEB (online, langsung Supabase), tidak perlu sinkron penuh.
+#  - auth.user_id() = id user dari JWT Supabase (= agro.profiles.id).
+# =====================================================================
+config:
+  edition: 3
+
+streams:
+
+  # ---- Semua data lapangan untuk user (master + kegiatan) ------------
+  agro_field_data:
+    auto_subscribe: true
+    with:
+      # Divisi yang boleh diakses user (dari scope division / estate / org)
+      my_divisions: |
+        SELECT d.id AS division_id
+        FROM agro.divisions d
+        JOIN agro.user_scopes us ON us.user_id = auth.user_id()
+        WHERE (us.scope_type = 'division' AND us.scope_id = d.id)
+           OR (us.scope_type = 'estate'   AND us.scope_id = d.estate_id)
+           OR (us.scope_type = 'org'      AND us.scope_id = d.organization_id)
+    queries:
+      # --- Master lokasi ---
+      - SELECT e.* FROM agro.estates e
+          JOIN agro.divisions d ON d.estate_id = e.id
+          WHERE d.id IN (SELECT division_id FROM my_divisions)
+      - SELECT * FROM agro.divisions
+          WHERE id IN (SELECT division_id FROM my_divisions)
+      - SELECT * FROM agro.blocks
+          WHERE division_id IN (SELECT division_id FROM my_divisions)
+      - SELECT * FROM agro.tph
+          WHERE division_id IN (SELECT division_id FROM my_divisions)
+      - SELECT * FROM agro.employees
+          WHERE division_id IN (SELECT division_id FROM my_divisions)
+      - SELECT m.* FROM agro.materials m
+          JOIN agro.divisions d ON d.organization_id = m.organization_id
+          WHERE d.id IN (SELECT division_id FROM my_divisions)
+
+      # --- Kegiatan + detail ---
+      - SELECT * FROM agro.activities
+          WHERE division_id IN (SELECT division_id FROM my_divisions)
+      - SELECT al.* FROM agro.attendance_lines al
+          JOIN agro.activities a ON a.id = al.activity_id
+          WHERE a.division_id IN (SELECT division_id FROM my_divisions)
+      - SELECT hr.* FROM agro.harvest_records hr
+          JOIN agro.activities a ON a.id = hr.activity_id
+          WHERE a.division_id IN (SELECT division_id FROM my_divisions)
+      - SELECT dr.* FROM agro.delivery_records dr
+          JOIN agro.activities a ON a.id = dr.activity_id
+          WHERE a.division_id IN (SELECT division_id FROM my_divisions)
+      - SELECT att.* FROM agro.attachments att
+          JOIN agro.activities a ON a.id = att.activity_id
+          WHERE a.division_id IN (SELECT division_id FROM my_divisions)
+      # modul Fase 2
+      - SELECT pr.* FROM agro.pruning_records pr
+          JOIN agro.activities a ON a.id = pr.activity_id
+          WHERE a.division_id IN (SELECT division_id FROM my_divisions)
+      - SELECT fr.* FROM agro.fertilizing_records fr
+          JOIN agro.activities a ON a.id = fr.activity_id
+          WHERE a.division_id IN (SELECT division_id FROM my_divisions)
+      - SELECT mr.* FROM agro.maintenance_records mr
+          JOIN agro.activities a ON a.id = mr.activity_id
+          WHERE a.division_id IN (SELECT division_id FROM my_divisions)
+
+  # ---- Profil user sendiri (identitas di app) ------------------------
+  agro_me:
+    auto_subscribe: true
+    queries:
+      - SELECT * FROM agro.profiles WHERE id = auth.user_id()
+
+# Catatan:
+#  - delivery_reconciliation & audit_logs sengaja TIDAK disinkron ke mobile
+#    (khusus dashboard web), jadi tidak ada di sini.
+#  - Klik VALIDATE dulu. Jika ada query yang ditolak (mis. nested subquery),
+#    pesannya akan spesifik dan mudah saya sesuaikan.

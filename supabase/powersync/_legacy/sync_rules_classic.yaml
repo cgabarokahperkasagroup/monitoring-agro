@@ -1,0 +1,71 @@
+# =====================================================================
+# Monitoring Agro — PowerSync Sync Rules
+# Dipasang di PowerSync Dashboard (bukan di Postgres).
+# Semua tabel berada di schema "agro" (referensi schema-qualified).
+# Tiap device hanya menarik data sesuai cakupan penggunanya:
+#  - Data lokasi/master  -> per ESTATE  (agro.v_user_estate_access)
+#  - Data kegiatan        -> per DIVISI  (agro.v_user_division_access)
+# request.user_id() diambil dari JWT Supabase (sub = auth user id).
+# Catatan: pastikan publication PowerSync mencakup tabel schema "agro".
+# =====================================================================
+
+bucket_definitions:
+
+  # ---- Master data per estate yang boleh diakses user ----------------
+  estate_master:
+    parameters: >
+      select estate_id from agro.v_user_estate_access
+      where user_id = request.user_id()
+    data:
+      - select * from agro.estates       where id = bucket.estate_id
+      - select * from agro.divisions     where estate_id = bucket.estate_id
+      - select * from agro.blocks        where estate_id = bucket.estate_id
+      - select * from agro.tph           where estate_id = bucket.estate_id
+      - select * from agro.employees     where estate_id = bucket.estate_id
+
+  # ---- Data kegiatan per divisi yang boleh diakses user --------------
+  division_activities:
+    parameters: >
+      select division_id from agro.v_user_division_access
+      where user_id = request.user_id()
+    data:
+      - select * from agro.activities where division_id = bucket.division_id
+      # anak-anak activities difilter lewat join ke activities
+      - select al.* from agro.attendance_lines al
+          join agro.activities a on a.id = al.activity_id
+          where a.division_id = bucket.division_id
+      - select hr.* from agro.harvest_records hr
+          join agro.activities a on a.id = hr.activity_id
+          where a.division_id = bucket.division_id
+      - select dr.* from agro.delivery_records dr
+          join agro.activities a on a.id = dr.activity_id
+          where a.division_id = bucket.division_id
+      - select att.* from agro.attachments att
+          join agro.activities a on a.id = att.activity_id
+          where a.division_id = bucket.division_id
+      # modul Fase 2 (aktif saat UI siap)
+      - select pr.* from agro.pruning_records pr
+          join agro.activities a on a.id = pr.activity_id
+          where a.division_id = bucket.division_id
+      - select fr.* from agro.fertilizing_records fr
+          join agro.activities a on a.id = fr.activity_id
+          where a.division_id = bucket.division_id
+      - select mr.* from agro.maintenance_records mr
+          join agro.activities a on a.id = mr.activity_id
+          where a.division_id = bucket.division_id
+
+  # ---- Data global yang dibutuhkan semua user ------------------------
+  global:
+    data:
+      # profil sendiri (untuk identitas di app)
+      - select * from agro.profiles where id = request.user_id()
+      # daftar materials per organisasi diakses user (Fase 2)
+      - select m.* from agro.materials m
+          join agro.v_user_estate_access ua on ua.user_id = request.user_id()
+          join agro.estates e on e.id = ua.estate_id and e.organization_id = m.organization_id
+
+# Catatan:
+#  * delivery_reconciliation & audit_logs SENGAJA tidak disinkron ke mobile
+#    (diisi/diakses dari dashboard web saja) demi hemat data device.
+#  * Penulisan dari device (upload) tetap melewati Supabase client -> RLS
+#    (file 008) yang menentukan boleh/tidaknya insert/update.
