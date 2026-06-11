@@ -1,0 +1,15 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Env (jangan commit kredensial asli)
+.env
+.env.local
+
+# editor / OS
+.DS_Store
+*.log
+
+# TS build info
+*.tsbuildinfo
