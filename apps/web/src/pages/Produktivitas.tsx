@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   useDivisionProductivity,
   useDivisions,
@@ -9,9 +9,10 @@ import {
 } from '@/lib/queries';
 import { RankedBarChart } from '@/components/RankedBarChart';
 import { ExportButtons } from '@/components/ExportButtons';
+import { ReportButton } from '@/components/ReportButton';
 import { Card, Field, QueryState } from '@/components/ui';
 import { daysAgoIso, fmtDate, n, todayIso } from '@/lib/format';
-import type { ExportColumn } from '@/lib/export';
+import { downloadReportPdf, type ExportColumn } from '@/lib/export';
 
 const TOP_N = 15;
 
@@ -49,6 +50,30 @@ export default function Produktivitas() {
   const empRows = empProd.data ?? [];
   const periode = `Periode ${fmtDate(from)} – ${fmtDate(to)}`;
 
+  const divChartRef = useRef<HTMLDivElement>(null);
+  const empChartRef = useRef<HTMLDivElement>(null);
+
+  async function onReport() {
+    const totalDivJanjang = divRows.reduce((a, r) => a + r.janjang, 0);
+    const totalEmpJanjang = empRows.reduce((a, r) => a + r.janjang, 0);
+    await downloadReportPdf({
+      title: 'Laporan Produktivitas — Monitoring Agro',
+      subtitle: periode,
+      filename: `laporan-produktivitas_${from}_sd_${to}`,
+      kpis: [
+        { label: 'Jumlah divisi (ada panen)', value: n(divRows.length) },
+        { label: 'Total janjang panen', value: n(totalDivJanjang) },
+        { label: 'Jumlah karyawan (ada output)', value: n(empRows.length) },
+        { label: 'Total janjang per karyawan', value: n(totalEmpJanjang) },
+      ],
+      chartEls: [divChartRef.current, empChartRef.current],
+      tables: [
+        { heading: 'Produksi per Divisi', columns: DIV_COLUMNS, rows: divRows },
+        { heading: 'Produktivitas per Karyawan', columns: EMP_COLUMNS, rows: empRows },
+      ],
+    });
+  }
+
   return (
     <div>
       <div className="card" style={{ marginBottom: 18 }}>
@@ -85,6 +110,10 @@ export default function Produktivitas() {
         </div>
       </div>
 
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <ReportButton run={onReport} label="⬇ Laporan PDF (grafik)" disabled={divProd.isLoading || empProd.isLoading} />
+      </div>
+
       <Card style={{ marginBottom: 18 }}>
         <div className="row-between" style={{ marginBottom: 14 }}>
           <strong>Produksi per Divisi (janjang panen)</strong>
@@ -102,15 +131,17 @@ export default function Produktivitas() {
           isEmpty={divRows.length === 0}
           emptyText="Belum ada data panen pada periode ini."
         >
-          <RankedBarChart
-            color="#15803d"
-            unit="jjg"
-            items={divRows.map((r) => ({
-              label: r.division_name ?? '—',
-              sub: `${n(Math.round(r.tonase))} kg · ${r.catatan} catatan`,
-              value: r.janjang,
-            }))}
-          />
+          <div ref={divChartRef}>
+            <RankedBarChart
+              color="#15803d"
+              unit="jjg"
+              items={divRows.map((r) => ({
+                label: r.division_name ?? '—',
+                sub: `${n(Math.round(r.tonase))} kg · ${r.catatan} catatan`,
+                value: r.janjang,
+              }))}
+            />
+          </div>
         </QueryState>
       </Card>
 
@@ -131,15 +162,17 @@ export default function Produktivitas() {
           isEmpty={empRows.length === 0}
           emptyText="Belum ada output per karyawan. Pastikan kehadiran/output dicatat di aplikasi mobile."
         >
-          <RankedBarChart
-            color="#0e7490"
-            unit="jjg"
-            items={empRows.slice(0, TOP_N).map((r) => ({
-              label: r.name ?? '—',
-              sub: r.nik ?? undefined,
-              value: r.janjang,
-            }))}
-          />
+          <div ref={empChartRef}>
+            <RankedBarChart
+              color="#0e7490"
+              unit="jjg"
+              items={empRows.slice(0, TOP_N).map((r) => ({
+                label: r.name ?? '—',
+                sub: r.nik ?? undefined,
+                value: r.janjang,
+              }))}
+            />
+          </div>
           {empRows.length > TOP_N ? (
             <p className="muted" style={{ fontSize: 12, marginTop: 10, marginBottom: 0 }}>
               Menampilkan {TOP_N} teratas dari {empRows.length} karyawan. Unduh untuk daftar lengkap.

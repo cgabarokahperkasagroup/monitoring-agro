@@ -10,8 +10,9 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/auth';
 import { Badge, QueryState } from '@/components/ui';
 import { ExportButtons } from '@/components/ExportButtons';
+import { ReportButton } from '@/components/ReportButton';
 import { daysAgoIso, fmtDate, n, n2, todayIso } from '@/lib/format';
-import type { ExportColumn } from '@/lib/export';
+import { downloadReportPdf, type ExportColumn } from '@/lib/export';
 
 const r2 = (x: number) => Number(x.toFixed(2));
 
@@ -131,6 +132,25 @@ function SummaryTab({ from, to }: { from: string; to: string }) {
     return { diff, pct };
   };
 
+  async function onReport() {
+    const susut = totals.reconciled_count > 0 ? totals.kirim_tonase - totals.terima_tonase : null;
+    await downloadReportPdf({
+      title: 'Laporan Rekonsiliasi (Panen → Angkut → Terima) — Monitoring Agro',
+      subtitle: `Periode ${fmtDate(from)} – ${fmtDate(to)}`,
+      filename: `laporan-rekonsiliasi_${from}_sd_${to}`,
+      kpis: [
+        { label: 'Total janjang panen', value: n(totals.panen_janjang) },
+        { label: 'Total janjang angkut', value: n(totals.kirim_janjang) },
+        { label: 'Selisih janjang (panen − angkut)', value: n(totals.panen_janjang - totals.kirim_janjang) },
+        { label: 'Total est. muat (kg)', value: n(Math.round(totals.kirim_tonase)) },
+        { label: 'Total diterima PKS (kg)', value: totals.reconciled_count > 0 ? n(Math.round(totals.terima_tonase)) : '—' },
+        { label: 'Susut tonase (kg)', value: susut == null ? '—' : n(Math.round(susut)) },
+        { label: 'Pengiriman terekonsiliasi', value: `${totals.reconciled_count}/${totals.delivery_count}` },
+      ],
+      tables: [{ heading: 'Rekonsiliasi per Divisi', columns: REKON_SUMMARY_COLUMNS, rows }],
+    });
+  }
+
   return (
     <>
       <div className="row-between" style={{ alignItems: 'flex-start', gap: 16 }}>
@@ -138,13 +158,16 @@ function SummaryTab({ from, to }: { from: string; to: string }) {
           Agregat per divisi. <strong>Selisih janjang</strong> = panen − dikirim (belum terangkut/susut lapangan).{' '}
           <strong>Susut tonase</strong> = estimasi muat − tonase final PKS (hanya pengiriman yang sudah dicatat finalnya).
         </p>
-        <ExportButtons
-          title="Rekonsiliasi Ringkasan (Panen → Angkut → Terima)"
-          subtitle={`Periode ${fmtDate(from)} – ${fmtDate(to)}`}
-          filename={`rekonsiliasi-ringkasan_${from}_sd_${to}`}
-          columns={REKON_SUMMARY_COLUMNS}
-          rows={rows}
-        />
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <ExportButtons
+            title="Rekonsiliasi Ringkasan (Panen → Angkut → Terima)"
+            subtitle={`Periode ${fmtDate(from)} – ${fmtDate(to)}`}
+            filename={`rekonsiliasi-ringkasan_${from}_sd_${to}`}
+            columns={REKON_SUMMARY_COLUMNS}
+            rows={rows}
+          />
+          <ReportButton run={onReport} label="⬇ Laporan PDF" disabled={isLoading} />
+        </div>
       </div>
       <QueryState isLoading={isLoading} error={error} isEmpty={rows.length === 0} emptyText="Belum ada data pada periode ini.">
         <div className="table-wrap">

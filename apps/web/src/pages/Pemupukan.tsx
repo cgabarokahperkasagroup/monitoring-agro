@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   useDivisions,
@@ -12,9 +12,10 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/auth';
 import { PlanVsActualChart } from '@/components/PlanVsActualChart';
 import { ExportButtons } from '@/components/ExportButtons';
+import { ReportButton } from '@/components/ReportButton';
 import { Card, Field, QueryState } from '@/components/ui';
 import { n } from '@/lib/format';
-import type { ExportColumn } from '@/lib/export';
+import { downloadReportPdf, type ExportColumn } from '@/lib/export';
 
 const CMP_COLUMNS: ExportColumn<FertilizerCompareRow>[] = [
   { header: 'Divisi', value: (r) => r.division_name },
@@ -43,6 +44,25 @@ export default function Pemupukan() {
   const cmp = useFertilizerComparison({ month, estateId });
   const plans = useFertilizerPlans({ month, estateId });
   const cmpRows = cmp.data ?? [];
+
+  const chartRef = useRef<HTMLDivElement>(null);
+  async function onReport() {
+    const totalPlan = cmpRows.reduce((a, r) => a + r.plan_kg, 0);
+    const totalActual = cmpRows.reduce((a, r) => a + r.actual_kg, 0);
+    await downloadReportPdf({
+      title: 'Laporan Pemupukan (Realisasi vs Rencana) — Monitoring Agro',
+      subtitle: `Bulan ${month}`,
+      filename: `laporan-pemupukan_${month}`,
+      kpis: [
+        { label: 'Total rencana (kg)', value: n(Math.round(totalPlan)) },
+        { label: 'Total realisasi (kg)', value: n(Math.round(totalActual)) },
+        { label: 'Capaian keseluruhan', value: totalPlan > 0 ? `${Math.round((totalActual / totalPlan) * 100)}%` : '—' },
+        { label: 'Jumlah divisi', value: n(cmpRows.length) },
+      ],
+      chartEls: [chartRef.current],
+      tables: [{ heading: 'Realisasi vs Rencana per Divisi', columns: CMP_COLUMNS, rows: cmpRows }],
+    });
+  }
 
   // form rencana
   const [divisionId, setDivisionId] = useState('');
@@ -112,13 +132,16 @@ export default function Pemupukan() {
       <Card style={{ marginBottom: 18 }}>
         <div className="row-between" style={{ marginBottom: 14 }}>
           <strong>Realisasi vs Rencana Pemupukan (per divisi)</strong>
-          <ExportButtons
-            title="Realisasi vs Rencana Pemupukan — Monitoring Agro"
-            subtitle={`Bulan ${month}`}
-            filename={`pemupukan_${month}`}
-            columns={CMP_COLUMNS}
-            rows={cmpRows}
-          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <ExportButtons
+              title="Realisasi vs Rencana Pemupukan — Monitoring Agro"
+              subtitle={`Bulan ${month}`}
+              filename={`pemupukan_${month}`}
+              columns={CMP_COLUMNS}
+              rows={cmpRows}
+            />
+            <ReportButton run={onReport} label="⬇ Laporan PDF (grafik)" disabled={cmp.isLoading} />
+          </div>
         </div>
         <QueryState
           isLoading={cmp.isLoading}
@@ -126,13 +149,15 @@ export default function Pemupukan() {
           isEmpty={cmpRows.length === 0}
           emptyText="Belum ada rencana maupun realisasi pemupukan pada bulan ini."
         >
-          <PlanVsActualChart
-            items={cmpRows.map((r) => ({
-              label: r.division_name ?? '—',
-              plan: r.plan_kg,
-              actual: r.actual_kg,
-            }))}
-          />
+          <div ref={chartRef}>
+            <PlanVsActualChart
+              items={cmpRows.map((r) => ({
+                label: r.division_name ?? '—',
+                plan: r.plan_kg,
+                actual: r.actual_kg,
+              }))}
+            />
+          </div>
         </QueryState>
       </Card>
 
