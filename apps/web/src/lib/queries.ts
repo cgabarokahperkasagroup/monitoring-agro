@@ -12,7 +12,7 @@ function one<T>(v: T | T[] | null | undefined): T | null {
 }
 
 export type Estate = { id: string; name: string; code: string };
-export type Division = { id: string; name: string; code: string; estate_id: string };
+export type Division = { id: string; name: string; code: string; estate_id: string; organization_id: string };
 export type Block = { id: string; code: string; name: string; division_id: string; luas_ha: number | null };
 export type Employee = {
   id: string; nik: string; name: string; position: string | null;
@@ -60,7 +60,7 @@ export function useDivisions() {
     queryFn: async (): Promise<Division[]> => {
       const { data, error } = await supabase
         .from('divisions')
-        .select('id, name, code, estate_id')
+        .select('id, name, code, estate_id, organization_id')
         .order('name');
       if (error) throw error;
       return (data ?? []) as Division[];
@@ -482,6 +482,126 @@ export function useEmployeeProductivity(filters: {
         r.hari += 1;
       }
       return [...map.values()].sort((a, b) => b.janjang - a.janjang);
+    },
+  });
+}
+
+// ---- Pemupukan: realisasi vs rencana ----
+export type Material = { id: string; name: string; unit: string | null; category: string | null };
+
+export function useMaterials() {
+  return useQuery({
+    queryKey: ['materials'],
+    queryFn: async (): Promise<Material[]> => {
+      const { data, error } = await supabase
+        .from('materials')
+        .select('id, name, unit, category')
+        .order('name');
+      if (error) throw error;
+      return (data ?? []) as Material[];
+    },
+  });
+}
+
+function monthRange(month: string): { period: string; from: string; to: string } {
+  // month = 'YYYY-MM'
+  const period = `${month}-01`;
+  const [y, m] = month.split('-').map(Number);
+  const last = new Date(Date.UTC(y, m, 0)).getUTCDate(); // hari terakhir bulan
+  return { period, from: period, to: `${month}-${String(last).padStart(2, '0')}` };
+}
+
+export type FertilizerCompareRow = {
+  division_id: string;
+  division_name: string | null;
+  plan_kg: number;
+  actual_kg: number;
+};
+
+export function useFertilizerComparison(filters: { month: string; estateId?: string }) {
+  return useQuery({
+    queryKey: ['fert-compare', filters],
+    queryFn: async (): Promise<FertilizerCompareRow[]> => {
+      const { period, from, to } = monthRange(filters.month);
+
+      let pq = supabase
+        .from('fertilizing_plans')
+        .select('division_id, divisions(name), planned_kg')
+        .eq('period', period);
+      if (filters.estateId) pq = pq.eq('estate_id', filters.estateId);
+
+      let aq = supabase
+        .from('activities')
+        .select('division_id, divisions(name), fertilizing_records(total_kg)')
+        .eq('activity_type', 'pemupukan')
+        .is('deleted_at', null)
+        .gte('activity_date', from)
+        .lte('activity_date', to)
+        .limit(3000);
+      if (filters.estateId) aq = aq.eq('estate_id', filters.estateId);
+
+      const [{ data: pData, error: pErr }, { data: aData, error: aErr }] = await Promise.all([pq, aq]);
+      if (pErr) throw pErr;
+      if (aErr) throw aErr;
+
+      const map = new Map<string, FertilizerCompareRow>();
+      const get = (id: string, name: string | null) => {
+        let r = map.get(id);
+        if (!r) {
+          r = { division_id: id, division_name: name, plan_kg: 0, actual_kg: 0 };
+          map.set(id, r);
+        }
+        if (!r.division_name && name) r.division_name = name;
+        return r;
+      };
+      for (const p of (pData ?? []) as any[]) {
+        if (!p.division_id) continue;
+        get(p.division_id, one<any>(p.divisions)?.name ?? null).plan_kg += p.planned_kg ?? 0;
+      }
+      for (const a of (aData ?? []) as any[]) {
+        if (!a.division_id) continue;
+        const fr = one<any>(a.fertilizing_records);
+        get(a.division_id, one<any>(a.divisions)?.name ?? null).actual_kg += fr?.total_kg ?? 0;
+      }
+      return [...map.values()].sort((x, y) => y.plan_kg - x.plan_kg || y.actual_kg - x.actual_kg);
+    },
+  });
+}
+
+// ---- Daftar rencana (untuk editor) ----
+export type FertilizerPlan = {
+  id: string;
+  division_id: string;
+  division_name: string | null;
+  material_id: string;
+  material_name: string | null;
+  material_unit: string | null;
+  period: string;
+  planned_kg: number;
+};
+
+export function useFertilizerPlans(filters: { month: string; estateId?: string }) {
+  return useQuery({
+    queryKey: ['fert-plans', filters],
+    queryFn: async (): Promise<FertilizerPlan[]> => {
+      const { period } = monthRange(filters.month);
+      let q = supabase
+        .from('fertilizing_plans')
+        .select('id, division_id, material_id, period, planned_kg, divisions(name), materials(name, unit)')
+        .eq('period', period);
+      if (filters.estateId) q = q.eq('estate_id', filters.estateId);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []).map((r: any): FertilizerPlan => ({
+        id: r.id,
+        division_id: r.division_id,
+        division_name: one<any>(r.divisions)?.name ?? null,
+        material_id: r.material_id,
+        material_name: one<any>(r.materials)?.name ?? null,
+        material_unit: one<any>(r.materials)?.unit ?? null,
+        period: r.period,
+        planned_kg: r.planned_kg,
+      }));
     },
   });
 }

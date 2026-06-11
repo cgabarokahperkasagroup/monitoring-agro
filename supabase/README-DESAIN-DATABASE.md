@@ -23,6 +23,7 @@ Jalankan berurutan (tiap file = 1 migration, idempoten/aman diulang):
 | 009 | `009_business_triggers.sql` | Penjaga role, stempel verifikasi, audit status |
 | 010 | `010_sync_support_views.sql` | View pendukung sinkron PowerSync |
 | 016 | `016_storage_attachments.sql` | Bucket Storage `attachments` + policy foto (per-divisi) |
+| 017 | `017_fertilizing_plans.sql` | Rencana pemupukan per divisi/material/bulan (web-only) |
 | — | `powersync_sync_rules.yaml` | Dipasang di **PowerSync Dashboard**, bukan Postgres |
 
 > Catatan: migration 011–015 (perbaikan & publication PowerSync) sudah
