@@ -11,6 +11,7 @@ import Pemupukan from '@/pages/Pemupukan';
 import Rekonsiliasi from '@/pages/Rekonsiliasi';
 import Master from '@/pages/Master';
 import Pengguna from '@/pages/Pengguna';
+import Sistem from '@/pages/Sistem';
 
 function Protected({ children }: { children: ReactNode }) {
   const { session, initializing } = useAuth();
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/rekonsiliasi" element={<Rekonsiliasi />} />
         <Route path="/master" element={<Master />} />
         <Route path="/pengguna" element={<Pengguna />} />
+        <Route path="/sistem" element={<Sistem />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

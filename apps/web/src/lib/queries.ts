@@ -605,3 +605,83 @@ export function useFertilizerPlans(filters: { month: string; estateId?: string }
     },
   });
 }
+
+// ---- Audit log (admin) ----
+export type AuditLog = {
+  id: string;
+  created_at: string;
+  action: string;
+  entity_table: string;
+  entity_id: string | null;
+  actor_name: string | null;
+  before: unknown;
+  after: unknown;
+};
+
+export function useAuditLogs(filters: { action?: string; limit?: number }) {
+  return useQuery({
+    queryKey: ['audit-logs', filters],
+    queryFn: async (): Promise<AuditLog[]> => {
+      // actor_id -> profiles (FK tunggal, embed tidak ambigu).
+      let q = supabase
+        .from('audit_logs')
+        .select('id, created_at, action, entity_table, entity_id, before, after, profiles(full_name)')
+        .order('created_at', { ascending: false })
+        .limit(filters.limit ?? 300);
+      if (filters.action) q = q.eq('action', filters.action);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []).map((r: any): AuditLog => ({
+        id: r.id,
+        created_at: r.created_at,
+        action: r.action,
+        entity_table: r.entity_table,
+        entity_id: r.entity_id,
+        actor_name: one<any>(r.profiles)?.full_name ?? null,
+        before: r.before,
+        after: r.after,
+      }));
+    },
+  });
+}
+
+// ---- Status sinkron perangkat (diturunkan dari activities) ----
+// activities punya 2 FK ke profiles (created_by & verified_by) => embed ambigu,
+// jadi nama di-resolve di halaman lewat daftar profiles.
+export type DeviceSync = {
+  created_by: string;
+  source_device: string | null;
+  total: number;
+  last_seen: string | null; // max created_at (≈ waktu catat terkirim)
+  last_activity: string | null; // max activity_date
+};
+
+export function useDeviceSyncStatus() {
+  return useQuery({
+    queryKey: ['device-sync'],
+    queryFn: async (): Promise<DeviceSync[]> => {
+      const { data, error } = await supabase
+        .from('activities')
+        .select('created_by, source_device, created_at, activity_date')
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(5000);
+      if (error) throw error;
+
+      const map = new Map<string, DeviceSync>();
+      for (const a of (data ?? []) as any[]) {
+        if (!a.created_by) continue;
+        const key = `${a.created_by}|${a.source_device ?? ''}`;
+        let r = map.get(key);
+        if (!r) {
+          r = { created_by: a.created_by, source_device: a.source_device ?? null, total: 0, last_seen: null, last_activity: null };
+          map.set(key, r);
+        }
+        r.total += 1;
+        if (!r.last_seen || a.created_at > r.last_seen) r.last_seen = a.created_at;
+        if (a.activity_date && (!r.last_activity || a.activity_date > r.last_activity)) r.last_activity = a.activity_date;
+      }
+      return [...map.values()].sort((a, b) => (b.last_seen ?? '').localeCompare(a.last_seen ?? ''));
+    },
+  });
+}

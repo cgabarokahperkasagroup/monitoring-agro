@@ -9,6 +9,7 @@ const NAV = [
   { to: '/rekonsiliasi', label: 'Rekonsiliasi', icon: '⚖' },
   { to: '/master', label: 'Data Master', icon: '🗂' },
   { to: '/pengguna', label: 'Pengguna', icon: '👤' },
+  { to: '/sistem', label: 'Sistem', icon: '🛡' },
 ];
 
 const TITLES: Record<string, { title: string; sub: string }> = {
@@ -19,6 +20,7 @@ const TITLES: Record<string, { title: string; sub: string }> = {
   '/rekonsiliasi': { title: 'Rekonsiliasi Pengiriman', sub: 'Panen → angkut → terima pabrik' },
   '/master': { title: 'Data Master', sub: 'Estate, divisi, blok, karyawan' },
   '/pengguna': { title: 'Pengguna & Akses', sub: 'Role dan cakupan estate/divisi' },
+  '/sistem': { title: 'Sistem', sub: 'Audit log & status sinkron perangkat' },
 };
 
 export function Layout() {
