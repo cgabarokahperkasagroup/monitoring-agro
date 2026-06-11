@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useActivities, type ActivityRow } from '@/lib/queries';
 import { ActivityDetailModal } from '@/components/ActivityDetailModal';
+import { DailyProductionChart } from '@/components/DailyProductionChart';
 import { ExportButtons } from '@/components/ExportButtons';
 import { Badge, Kpi, QueryState } from '@/components/ui';
+import { buildDailySeries } from '@/lib/daily';
 import { daysAgoIso, fmtDate, n, todayIso } from '@/lib/format';
 import type { ExportColumn } from '@/lib/export';
 
@@ -45,6 +47,7 @@ export default function Ringkasan() {
   }, [data]);
 
   const recent = (data ?? []).slice(0, 8);
+  const daily = useMemo(() => buildDailySeries(data ?? [], from, todayIso()), [data, from]);
 
   return (
     <div>
@@ -69,6 +72,10 @@ export default function Ringkasan() {
             value={n(k.janjangPanen - k.janjangKirim)}
             foot="panen − dikirim (periode)"
           />
+        </div>
+
+        <div style={{ marginTop: 20 }}>
+          <DailyProductionChart data={daily} />
         </div>
 
         <div className="row-between section-title">
