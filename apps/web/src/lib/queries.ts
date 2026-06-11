@@ -300,3 +300,93 @@ export function useOrganizations() {
     },
   });
 }
+
+// ---- Rekonsiliasi tiga arah: panen -> angkut -> terima (agregat per divisi) ----
+export type ReconRow = {
+  division_id: string;
+  division_name: string | null;
+  panen_janjang: number;
+  panen_tonase: number; // estimasi tonase panen
+  kirim_janjang: number;
+  kirim_tonase: number; // estimasi tonase muat
+  terima_tonase: number; // tonase final timbangan PKS (net)
+  delivery_count: number;
+  reconciled_count: number;
+};
+
+export function useReconciliationSummary(filters: { from?: string; to?: string }) {
+  return useQuery({
+    queryKey: ['recon-summary', filters],
+    queryFn: async (): Promise<ReconRow[]> => {
+      let pq = supabase
+        .from('activities')
+        .select('division_id, divisions(name), harvest_records(total_janjang, est_tonase)')
+        .eq('activity_type', 'panen')
+        .is('deleted_at', null)
+        .limit(2000);
+      if (filters.from) pq = pq.gte('activity_date', filters.from);
+      if (filters.to) pq = pq.lte('activity_date', filters.to);
+
+      let dq = supabase
+        .from('activities')
+        .select(
+          'division_id, divisions(name), delivery_records(total_janjang, est_tonase_muat, delivery_reconciliation(net_tonase_pks))',
+        )
+        .eq('activity_type', 'pengiriman')
+        .is('deleted_at', null)
+        .limit(2000);
+      if (filters.from) dq = dq.gte('activity_date', filters.from);
+      if (filters.to) dq = dq.lte('activity_date', filters.to);
+
+      const [{ data: pData, error: pErr }, { data: dData, error: dErr }] = await Promise.all([pq, dq]);
+      if (pErr) throw pErr;
+      if (dErr) throw dErr;
+
+      const map = new Map<string, ReconRow>();
+      const get = (id: string, name: string | null): ReconRow => {
+        let r = map.get(id);
+        if (!r) {
+          r = {
+            division_id: id,
+            division_name: name,
+            panen_janjang: 0,
+            panen_tonase: 0,
+            kirim_janjang: 0,
+            kirim_tonase: 0,
+            terima_tonase: 0,
+            delivery_count: 0,
+            reconciled_count: 0,
+          };
+          map.set(id, r);
+        }
+        if (!r.division_name && name) r.division_name = name;
+        return r;
+      };
+
+      for (const a of (pData ?? []) as any[]) {
+        if (!a.division_id) continue;
+        const r = get(a.division_id, one<any>(a.divisions)?.name ?? null);
+        const h = one<any>(a.harvest_records);
+        r.panen_janjang += h?.total_janjang ?? 0;
+        r.panen_tonase += h?.est_tonase ?? 0;
+      }
+
+      for (const a of (dData ?? []) as any[]) {
+        if (!a.division_id) continue;
+        const r = get(a.division_id, one<any>(a.divisions)?.name ?? null);
+        const d = one<any>(a.delivery_records);
+        if (!d) continue;
+        r.kirim_janjang += d.total_janjang ?? 0;
+        r.kirim_tonase += d.est_tonase_muat ?? 0;
+        r.delivery_count += 1;
+        const rec = one<any>(d.delivery_reconciliation);
+        if (rec && rec.net_tonase_pks != null) {
+          r.terima_tonase += rec.net_tonase_pks;
+          r.reconciled_count += 1;
+        }
+      }
+
+      return [...map.values()].sort((a, b) => b.panen_janjang - a.panen_janjang);
+    },
+  });
+}

@@ -126,6 +126,7 @@ thead th {
 }
 tbody td { padding: 12px 14px; border-bottom: 1px solid #f1f5f4; }
 tbody tr:last-child td { border-bottom: none; }
+tfoot td { padding: 12px 14px; border-top: 2px solid var(--card-border); background: var(--canvas); }
 tbody tr:hover { background: var(--canvas); }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 
