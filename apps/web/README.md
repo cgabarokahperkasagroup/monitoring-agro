@@ -32,8 +32,9 @@ src/
     ui.tsx              Card, Kpi, Badge, QueryState, Field, Spinner
   pages/
     Login.tsx
-    Ringkasan.tsx       KPI produksi & pengiriman + kegiatan terbaru
+    Ringkasan.tsx       KPI + grafik produksi harian + kegiatan terbaru
     Kegiatan.tsx        tabel kegiatan + filter (jenis/estate/divisi/tanggal)
+    Produktivitas.tsx   bar chart per divisi (janjang) & top karyawan (output)
     Rekonsiliasi.tsx    pengiriman vs tonase final PKS (catat + status cocok/selisih)
     Master.tsx          estate, divisi, blok, karyawan (read-only)
     Pengguna.tsx        profil + role + cakupan akses (read-only)

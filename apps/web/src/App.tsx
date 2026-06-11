@@ -6,6 +6,7 @@ import { Spinner } from '@/components/ui';
 import Login from '@/pages/Login';
 import Ringkasan from '@/pages/Ringkasan';
 import Kegiatan from '@/pages/Kegiatan';
+import Produktivitas from '@/pages/Produktivitas';
 import Rekonsiliasi from '@/pages/Rekonsiliasi';
 import Master from '@/pages/Master';
 import Pengguna from '@/pages/Pengguna';
@@ -37,6 +38,7 @@ export default function App() {
       >
         <Route path="/" element={<Ringkasan />} />
         <Route path="/kegiatan" element={<Kegiatan />} />
+        <Route path="/produktivitas" element={<Produktivitas />} />
         <Route path="/rekonsiliasi" element={<Rekonsiliasi />} />
         <Route path="/master" element={<Master />} />
         <Route path="/pengguna" element={<Pengguna />} />

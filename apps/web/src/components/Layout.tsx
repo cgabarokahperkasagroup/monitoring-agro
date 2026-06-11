@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth';
 const NAV = [
   { to: '/', label: 'Ringkasan', icon: '▱', end: true },
   { to: '/kegiatan', label: 'Kegiatan', icon: '🌴' },
+  { to: '/produktivitas', label: 'Produktivitas', icon: '📊' },
   { to: '/rekonsiliasi', label: 'Rekonsiliasi', icon: '⚖' },
   { to: '/master', label: 'Data Master', icon: '🗂' },
   { to: '/pengguna', label: 'Pengguna', icon: '👤' },
@@ -12,6 +13,7 @@ const NAV = [
 const TITLES: Record<string, { title: string; sub: string }> = {
   '/': { title: 'Ringkasan', sub: 'KPI produksi & pengiriman' },
   '/kegiatan': { title: 'Kegiatan', sub: 'Catatan panen & pengiriman lapangan' },
+  '/produktivitas': { title: 'Produktivitas', sub: 'Per divisi & per karyawan' },
   '/rekonsiliasi': { title: 'Rekonsiliasi Pengiriman', sub: 'Panen → angkut → terima pabrik' },
   '/master': { title: 'Data Master', sub: 'Estate, divisi, blok, karyawan' },
   '/pengguna': { title: 'Pengguna & Akses', sub: 'Role dan cakupan estate/divisi' },

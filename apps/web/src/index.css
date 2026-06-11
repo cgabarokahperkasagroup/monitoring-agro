@@ -154,6 +154,16 @@ tbody tr:hover { background: var(--canvas); }
 .login-brand { text-align: center; margin-bottom: 24px; }
 .login-logo { width: 52px; height: 52px; border-radius: 15px; background: var(--primary); margin: 0 auto 14px; }
 
+/* ---- Ranked bar chart ---- */
+.rbar-list { display: flex; flex-direction: column; gap: 10px; }
+.rbar-row { display: grid; grid-template-columns: minmax(120px, 230px) 1fr auto; align-items: center; gap: 12px; }
+.rbar-label { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rbar-rank { color: var(--faint); font-weight: 700; }
+.rbar-sub { color: var(--muted); font-weight: 400; font-size: 12px; }
+.rbar-track { height: 18px; background: var(--canvas); border-radius: 999px; overflow: hidden; }
+.rbar-fill { height: 100%; border-radius: 999px; min-width: 2px; transition: width 0.3s ease; }
+.rbar-value { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; min-width: 64px; }
+
 /* ---- Misc ---- */
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .muted { color: var(--muted); }

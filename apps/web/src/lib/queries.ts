@@ -390,3 +390,98 @@ export function useReconciliationSummary(filters: { from?: string; to?: string }
     },
   });
 }
+
+// ---- Produktivitas per DIVISI (produksi panen) ----
+export type DivisionProductivity = {
+  division_id: string;
+  division_name: string | null;
+  janjang: number;
+  tonase: number;
+  catatan: number; // jumlah catatan panen
+};
+
+export function useDivisionProductivity(filters: { from?: string; to?: string; estateId?: string }) {
+  return useQuery({
+    queryKey: ['prod-division', filters],
+    queryFn: async (): Promise<DivisionProductivity[]> => {
+      let q = supabase
+        .from('activities')
+        .select('division_id, divisions(name), harvest_records(total_janjang, est_tonase)')
+        .eq('activity_type', 'panen')
+        .is('deleted_at', null)
+        .limit(3000);
+      if (filters.from) q = q.gte('activity_date', filters.from);
+      if (filters.to) q = q.lte('activity_date', filters.to);
+      if (filters.estateId) q = q.eq('estate_id', filters.estateId);
+
+      const { data, error } = await q;
+      if (error) throw error;
+
+      const map = new Map<string, DivisionProductivity>();
+      for (const a of (data ?? []) as any[]) {
+        if (!a.division_id) continue;
+        let r = map.get(a.division_id);
+        if (!r) {
+          r = { division_id: a.division_id, division_name: one<any>(a.divisions)?.name ?? null, janjang: 0, tonase: 0, catatan: 0 };
+          map.set(a.division_id, r);
+        }
+        const h = one<any>(a.harvest_records);
+        r.janjang += h?.total_janjang ?? 0;
+        r.tonase += h?.est_tonase ?? 0;
+        r.catatan += 1;
+      }
+      return [...map.values()].sort((a, b) => b.janjang - a.janjang);
+    },
+  });
+}
+
+// ---- Produktivitas per KARYAWAN (output janjang dari attendance_lines) ----
+export type EmployeeProductivity = {
+  employee_id: string;
+  name: string | null;
+  nik: string | null;
+  janjang: number;
+  hari: number; // jumlah hari/catatan kehadiran dengan output
+};
+
+export function useEmployeeProductivity(filters: {
+  from?: string;
+  to?: string;
+  estateId?: string;
+  divisionId?: string;
+}) {
+  return useQuery({
+    queryKey: ['prod-employee', filters],
+    queryFn: async (): Promise<EmployeeProductivity[]> => {
+      let q = supabase
+        .from('attendance_lines')
+        .select(
+          'output_qty, employee_id, employees(name, nik), activities!inner(activity_date, activity_type, estate_id, division_id, deleted_at)',
+        )
+        .eq('activities.activity_type', 'panen')
+        .is('activities.deleted_at', null)
+        .limit(8000);
+      if (filters.from) q = q.gte('activities.activity_date', filters.from);
+      if (filters.to) q = q.lte('activities.activity_date', filters.to);
+      if (filters.estateId) q = q.eq('activities.estate_id', filters.estateId);
+      if (filters.divisionId) q = q.eq('activities.division_id', filters.divisionId);
+
+      const { data, error } = await q;
+      if (error) throw error;
+
+      const map = new Map<string, EmployeeProductivity>();
+      for (const a of (data ?? []) as any[]) {
+        if (!a.employee_id) continue;
+        let r = map.get(a.employee_id);
+        if (!r) {
+          const emp = one<any>(a.employees);
+          r = { employee_id: a.employee_id, name: emp?.name ?? null, nik: emp?.nik ?? null, janjang: 0, hari: 0 };
+          map.set(a.employee_id, r);
+        }
+        r.janjang += a.output_qty ?? 0;
+        r.hari += 1;
+      }
+      return [...map.values()].sort((a, b) => b.janjang - a.janjang);
+    },
+  });
+}

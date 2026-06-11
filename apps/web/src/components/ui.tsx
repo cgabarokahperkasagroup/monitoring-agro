@@ -1,5 +1,5 @@
 // Komponen UI dasar dashboard (tanpa lib eksternal).
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, type CSSProperties, type ReactNode } from 'react';
 
 export function Spinner() {
   return <span className="spinner" aria-label="memuat" />;
@@ -52,8 +52,20 @@ export function Badge({ children, tone = 'neutral' }: { children: ReactNode; ton
   return <span className={`badge badge-${tone}`}>{children}</span>;
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`card ${className}`}>{children}</div>;
+export function Card({
+  children,
+  className = '',
+  style,
+}: {
+  children: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  return (
+    <div className={`card ${className}`} style={style}>
+      {children}
+    </div>
+  );
 }
 
 export function Kpi({ label, value, foot }: { label: string; value: ReactNode; foot?: ReactNode }) {
