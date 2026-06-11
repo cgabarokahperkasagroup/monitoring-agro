@@ -26,8 +26,15 @@ Jalankan berurutan (tiap file = 1 migration, idempoten/aman diulang):
 | 017 | `017_fertilizing_plans.sql` | Rencana pemupukan per divisi/material/bulan (web-only) |
 | 018 | `018_scheduled_reports.sql` | Laporan terjadwal: tabel + fungsi + **pg_cron** harian |
 | 019 | `019_report_email.sql` | Kolom penerima email & penanda kirim (Resend) |
+| 020 | `020_auto_email.sql` | **Auto-email** setelah cron: pg_net + app_config (cron_secret) |
 | — | `powersync_sync_rules.yaml` | Dipasang di **PowerSync Dashboard**, bukan Postgres |
 | — | `functions/agro-email-report/` | Edge Function kirim laporan via **Resend** (set `RESEND_API_KEY`) |
+
+> **Auto-email**: `run_scheduled_reports()` (pg_cron harian) membuat laporan lalu, bila
+> jadwal punya `email_recipients`, memanggil Edge Function via `pg_net` (header
+> `x-cron-secret` dari `agro.app_config`, RLS deny-all). Edge Function pakai mode
+> service untuk cron, atau token pemanggil (RLS admin) untuk tombol di dashboard.
+> Aktif setelah secret `RESEND_API_KEY` di-set di Supabase.
 
 > Catatan: migration 011–015 (perbaikan & publication PowerSync) sudah
 > diterapkan; 013 (role PowerSync berpassword) ada di `powersync/role.sql`

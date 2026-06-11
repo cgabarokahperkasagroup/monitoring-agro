@@ -292,9 +292,9 @@ export default function LaporanTerjadwal() {
           </div>
         </QueryState>
         <p className="muted" style={{ fontSize: 12, marginTop: 12, marginBottom: 0 }}>
-          Otomatis: pg_cron menjalankan jadwal aktif tiap hari (01:05 UTC). Hasil muncul di Riwayat Laporan.
-          Email memakai Resend — set secret <code>RESEND_API_KEY</code> (opsional <code>REPORT_FROM_EMAIL</code>)
-          di Supabase agar tombol ✉ Email berfungsi.
+          Otomatis: pg_cron menjalankan jadwal aktif tiap hari (01:05 UTC) → laporan dibuat dan, bila jadwal
+          punya penerima, langsung dikirim email. Set secret <code>RESEND_API_KEY</code>
+          (opsional <code>REPORT_FROM_EMAIL</code>) di Supabase agar email otomatis & tombol ✉ Email berfungsi.
         </p>
       </Card>
 

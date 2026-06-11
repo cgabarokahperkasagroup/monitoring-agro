@@ -1,7 +1,14 @@
 // =====================================================================
 // Edge Function: agro-email-report
 // Kirim 1 laporan (report_runs) via Resend ke penerima jadwal.
-// Auth: verify_jwt aktif + dibaca dengan token pemanggil (RLS => hanya admin).
+//
+// Dua mode otentikasi (verify_jwt = false; auth ditangani di dalam fungsi):
+//  1) Dashboard: dipanggil dengan JWT pemanggil di Authorization -> dibaca
+//     dengan token itu sehingga RLS membatasi ke admin.
+//  2) Cron (pg_net): header `x-cron-secret` cocok dgn agro.app_config.cron_secret
+//     -> mode service-role (baca run langsung). Secret bersifat rahasia (RLS
+//     deny-all), jadi hanya cron internal yang bisa memicu mode ini.
+//
 // Secret yang dibutuhkan: RESEND_API_KEY (+ opsional REPORT_FROM_EMAIL).
 // =====================================================================
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
@@ -9,14 +16,13 @@ import { createClient } from 'npm:@supabase/supabase-js@2.45.0';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 }
-
 function toBase64(str: string): string {
   const bytes = new TextEncoder().encode(str);
   let bin = '';
@@ -37,20 +43,31 @@ Deno.serve(async (req) => {
   try {
     const url = Deno.env.get('SUPABASE_URL')!;
     const anon = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const resendKey = Deno.env.get('RESEND_API_KEY');
     const fromEmail = Deno.env.get('REPORT_FROM_EMAIL') ?? 'Monitoring Agro <onboarding@resend.dev>';
     if (!resendKey) return json({ error: 'RESEND_API_KEY belum di-set di Supabase secrets.' }, 500);
 
-    const { run_id, to } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    const run_id = body.run_id;
+    const to = body.to;
     if (!run_id) return json({ error: 'run_id wajib.' }, 400);
 
-    const authHeader = req.headers.get('Authorization') ?? '';
-    const supa = createClient(url, anon, {
-      global: { headers: { Authorization: authHeader } },
-      db: { schema: 'agro' },
-    });
+    const adminClient = createClient(url, service, { db: { schema: 'agro' } });
 
-    const { data: run, error } = await supa
+    // Pilih klien baca: mode cron (service) bila x-cron-secret valid, jika tidak
+    // pakai token pemanggil (RLS => hanya admin yang dapat membaca).
+    const cronSecret = req.headers.get('x-cron-secret');
+    let reader = adminClient;
+    if (cronSecret) {
+      const { data: cfg } = await adminClient.from('app_config').select('value').eq('key', 'cron_secret').maybeSingle();
+      if (!cfg || cfg.value !== cronSecret) return json({ error: 'cron secret tidak valid.' }, 403);
+    } else {
+      const authHeader = req.headers.get('Authorization') ?? '';
+      reader = createClient(url, anon, { global: { headers: { Authorization: authHeader } }, db: { schema: 'agro' } });
+    }
+
+    const { data: run, error } = await reader
       .from('report_runs')
       .select('id, report_type, period_from, period_to, row_count, summary, report_schedules(name, email_recipients)')
       .eq('id', run_id)
@@ -92,12 +109,7 @@ Deno.serve(async (req) => {
     const result = await resp.json().catch(() => ({}));
     if (!resp.ok) return json({ error: result?.message ?? 'Gagal mengirim via Resend.', detail: result }, 502);
 
-    // Tandai terkirim (service role; report_runs tak punya policy update utk authenticated).
-    const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    if (service) {
-      const admin = createClient(url, service, { db: { schema: 'agro' } });
-      await admin.from('report_runs').update({ emailed_at: new Date().toISOString() }).eq('id', run_id);
-    }
+    await adminClient.from('report_runs').update({ emailed_at: new Date().toISOString() }).eq('id', run_id);
     return json({ ok: true, sent_to: recipients, id: result?.id });
   } catch (e) {
     return json({ error: (e as Error)?.message ?? 'error' }, 500);
