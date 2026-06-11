@@ -26,6 +26,13 @@ export async function disconnectPowerSync() {
   connected = false;
 }
 
+// Saat logout: putus koneksi DAN hapus data lokal, supaya data divisi user
+// sebelumnya tidak terbawa ke user berikutnya di perangkat yang sama.
+export async function clearPowerSync() {
+  await db.disconnectAndClear();
+  connected = false;
+}
+
 // Contoh baca data (reactive) di komponen:
 //   import { db } from '@/powersync/system';
 //   const rows = await db.getAll('SELECT * FROM activities ORDER BY activity_date DESC');

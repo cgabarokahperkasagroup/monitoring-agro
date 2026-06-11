@@ -57,7 +57,8 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
             break;
           }
           case UpdateType.PATCH:
-            result = await table.update(op.opData).eq('id', op.id);
+            // opData bertipe opsional di SDK; PATCH selalu membawa data.
+            result = await table.update(op.opData ?? {}).eq('id', op.id);
             break;
           case UpdateType.DELETE:
             result = await table.delete().eq('id', op.id);

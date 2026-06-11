@@ -1,0 +1,24 @@
+# Expo / RN
+node_modules/
+.expo/
+dist/
+web-build/
+*.orig.*
+
+# Native
+/ios
+/android
+*.keystore
+*.jks
+
+# Env (jangan commit kredensial asli)
+.env
+.env.local
+
+# Metro
+.metro-health-check*
+
+# misc
+.DS_Store
+npm-debug.*
+yarn-error.*

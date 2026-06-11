@@ -1,9 +1,49 @@
-# Integrasi PowerSync — Mobile (React Native / Expo)
+# App Mobile (Expo) — Monitoring Agro
 
-File di folder ini siap dipakai di project Expo:
+App Expo (React Native + TypeScript) **sudah di-scaffold** di folder ini.
+Alur Fase 1: **login → daftar kegiatan → input Panen → Pengiriman**, offline-first
+lewat PowerSync (baca/tulis ke SQLite lokal, sinkron otomatis saat online).
+
+## Cara menjalankan (cepat)
+```bash
+cd apps/mobile
+cp .env.example .env          # kredensial Supabase + PowerSync (anon key publik)
+npm install                   # atau: npx expo install --fix untuk samakan versi SDK
+npx expo prebuild             # butuh dev build (ada native module SQLite — bukan Expo Go)
+npm run android               # atau: npm run ios
+```
+> Login pakai user uji, mis. `mandor1@barokah.test` (password lihat seed
+> `supabase/seed/101_provision_test_users.sql`).
+
+## Struktur
+```
+app/
+  _layout.tsx           providers (Auth + PowerSync) + gerbang redirect
+  index.tsx             splash saat memulihkan sesi
+  login.tsx             login Supabase (email/password)
+  (app)/
+    _layout.tsx         stack terproteksi
+    index.tsx           Daftar Kegiatan + status sinkron + aksi cepat
+    panen.tsx           form Input Panen (+ kehadiran/output per karyawan)
+    pengiriman.tsx      form Pengiriman TBS ke PKS
+lib/
+  auth/AuthProvider.tsx siklus hidup auth + setup/clear PowerSync
+  db/hooks.ts           query reaktif (useQuery) dari DB lokal
+  db/write.ts           tulis Panen/Pengiriman dalam satu transaksi lokal
+  polyfills.ts          polyfill wajib PowerSync (dimuat di index.js)
+  ui.tsx, theme.ts, FormScaffold.tsx, SyncBanner.tsx   komponen & desain
+  powersync/, supabaseClient.ts                        wiring (lihat di bawah)
+```
+> **Catat:** versi di `package.json` dipatok ke **Expo SDK 52** (set stabil &
+> kompatibel PowerSync). Untuk naik SDK: `npx expo install expo@latest` lalu
+> `npx expo install --fix`.
+
+---
+
+## Wiring PowerSync ↔ Supabase (referensi)
 - `AppSchema.ts` — schema lokal SQLite (cocok dengan Sync Streams `agro`).
 - `SupabaseConnector.ts` — auth + upload perubahan ke Supabase (schema agro).
-- `system.ts` — inisialisasi `db` PowerSync + `setupPowerSync()`.
+- `system.ts` — inisialisasi `db` PowerSync + `setupPowerSync()` / `clearPowerSync()`.
 - `../supabaseClient.ts` — client Supabase (schema agro).
 - `../.env.example` — berisi Supabase URL/anon key + `EXPO_PUBLIC_POWERSYNC_URL`.
 
