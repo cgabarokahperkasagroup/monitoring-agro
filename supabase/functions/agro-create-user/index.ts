@@ -3,8 +3,9 @@
 // Buat akun pengguna (Supabase Auth) + set profil (role) & cakupan.
 // Dua mode:
 //  - default: createUser + password sementara (dibagikan admin).
-//  - invite (body.invite=true): generateLink('invite') -> kirim email
-//    undangan via RESEND (tautan ke {redirect_to} utk set password).
+//  - invite (body.invite=true): inviteUserByEmail -> Supabase Auth mengirim
+//    email undangan (template "Invite user", via SMTP/email bawaan Auth);
+//    tautan mengarah ke {redirect_to} (/set-password) utk set kata sandi.
 // Hanya admin grup / super admin (diverifikasi via token pemanggil).
 // =====================================================================
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
@@ -22,10 +23,6 @@ function genPassword(): string {
   return 'Agro' + crypto.randomUUID().replace(/-/g, '').slice(0, 8) + '!9';
 }
 const ROLES = ['mandor', 'asisten', 'manager_kebun', 'admin_grup', 'super_admin'];
-const ROLE_LABEL: Record<string, string> = {
-  mandor: 'Mandor', asisten: 'Asisten', manager_kebun: 'Manajer Kebun',
-  admin_grup: 'Admin Grup', super_admin: 'Super Admin',
-};
 
 // deno-lint-ignore no-explicit-any
 async function applyProfileAndScopes(admin: any, userId: string, full_name: string | null, role: string, body: any) {
@@ -65,40 +62,24 @@ Deno.serve(async (req) => {
     if (!email) return json({ error: 'Email wajib diisi.' }, 400);
     if (!ROLES.includes(role)) return json({ error: 'Role tidak valid.' }, 400);
 
-    // ---------- MODE UNDANGAN EMAIL ----------
+    // ---------- MODE UNDANGAN EMAIL (Supabase Auth) ----------
+    // inviteUserByEmail: Auth membuat akun + mengirim email undangan sendiri
+    // (template "Invite user", lewat SMTP/email bawaan Auth). Tidak butuh Resend
+    // maupun verifikasi domain. Tautan undangan kembali ke {redirect_to}.
     if (body.invite === true) {
-      const resendKey = Deno.env.get('RESEND_API_KEY');
-      if (!resendKey) return json({ error: 'RESEND_API_KEY belum di-set (untuk email undangan).' }, 500);
-
-      const { data: link, error: lerr } = await admin.auth.admin.generateLink({
-        type: 'invite',
-        email,
-        options: { data: full_name ? { full_name } : {}, redirectTo: body.redirect_to || undefined },
+      const { data: inv, error: ierr } = await admin.auth.admin.inviteUserByEmail(email, {
+        data: full_name ? { full_name } : {},
+        redirectTo: body.redirect_to || undefined,
       });
-      if (lerr || !link?.user) return json({ error: lerr?.message ?? 'Gagal membuat undangan.' }, 400);
-      const userId = link.user.id;
+      if (ierr || !inv?.user) {
+        // Pesan SMTP/rate-limit Auth diteruskan apa adanya agar admin paham.
+        return json({ error: ierr?.message ?? 'Gagal mengirim undangan.' }, 400);
+      }
+      const userId = inv.user.id;
 
       const profErr = await applyProfileAndScopes(admin, userId, full_name, role, body);
-      if (profErr) return json({ error: `Undangan dibuat, tetapi gagal mengatur profil: ${profErr}`, user_id: userId }, 207);
+      if (profErr) return json({ error: `Undangan terkirim, tetapi gagal mengatur profil: ${profErr}`, user_id: userId }, 207);
 
-      const actionLink = (link.properties as { action_link?: string })?.action_link ?? '';
-      const fromEmail = Deno.env.get('REPORT_FROM_EMAIL') ?? 'Monitoring Agro <onboarding@resend.dev>';
-      const html = `
-        <h2>Undangan Monitoring Agro</h2>
-        <p>Halo${full_name ? ' ' + full_name : ''}, Anda diundang sebagai <strong>${ROLE_LABEL[role] ?? role}</strong>.</p>
-        <p>Klik tombol di bawah untuk mengatur kata sandi dan masuk:</p>
-        <p><a href="${actionLink}" style="display:inline-block;background:#15803d;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:700">Set Password & Masuk</a></p>
-        <p style="color:#888;font-size:12px">Jika tombol tidak berfungsi, salin tautan ini:<br>${actionLink}</p>`;
-
-      const resp = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: fromEmail, to: [email], subject: 'Undangan Monitoring Agro', html }),
-      });
-      const r = await resp.json().catch(() => ({}));
-      if (!resp.ok) {
-        return json({ ok: true, invited: true, email, user_id: userId, email_error: r?.message ?? 'Email gagal terkirim (akun tetap dibuat).' }, 207);
-      }
       return json({ ok: true, invited: true, email, user_id: userId });
     }
 

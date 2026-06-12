@@ -29,12 +29,14 @@ Jalankan berurutan (tiap file = 1 migration, idempoten/aman diulang):
 | 020 | `020_auto_email.sql` | **Auto-email** setelah cron: pg_net + app_config (cron_secret) |
 | — | `powersync_sync_rules.yaml` | Dipasang di **PowerSync Dashboard**, bukan Postgres |
 | — | `functions/agro-email-report/` | Edge Function kirim laporan via **Resend** (set `RESEND_API_KEY`) |
-| — | `functions/agro-create-user/` | Edge Function buat akun pengguna: password sementara, atau **undangan email** (`invite`) via Resend + tautan ke `/set-password` |
+| — | `functions/agro-create-user/` | Edge Function buat akun pengguna: password sementara, atau **undangan email** (`invite`) via Supabase Auth + tautan ke `/set-password` |
 
-> **Undangan email**: mode `invite` memakai `generateLink('invite')` + kirim via Resend (bukan Auth SMTP),
-> dengan tautan `redirect_to` ke `${origin}/set-password`. Agar tautan kembali ke app, tambahkan URL itu di
-> **Auth → URL Configuration → Redirect URLs**. Resend mode-uji hanya kirim ke email pemilik akun sampai
-> domain diverifikasi (verify di resend.com/domains + set `REPORT_FROM_EMAIL`).
+> **Undangan email**: mode `invite` memakai **`inviteUserByEmail`** — Supabase Auth sendiri yang
+> mengirim email undangan (template "Invite user", lewat email bawaan Auth / SMTP kustom). **Tidak butuh
+> Resend maupun verifikasi domain**; bisa kirim ke email apa pun (email bawaan Supabase punya rate-limit
+> rendah, untuk produksi set **Custom SMTP** di Auth → Emails). Tautan `redirect_to` ke `${origin}/set-password`;
+> agar tautan kembali ke app, tambahkan URL itu di **Auth → URL Configuration → Redirect URLs**.
+> Diverifikasi 2026-06-12: log Auth `mail.send` (mail_type=invite) terkirim ke email asli.
 
 > **Auto-email**: `run_scheduled_reports()` (pg_cron harian) membuat laporan lalu, bila
 > jadwal punya `email_recipients`, memanggil Edge Function via `pg_net` (header
