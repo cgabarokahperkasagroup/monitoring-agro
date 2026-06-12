@@ -1,6 +1,10 @@
 import { useState, type FormEvent } from 'react';
+import { Leaf } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { Card } from '@/components/ui';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -27,16 +31,18 @@ export default function Login() {
     <div className="login-wrap">
       <Card className="login-card">
         <div className="login-brand">
-          <div className="login-logo" />
-          <h1 style={{ fontSize: 22, color: 'var(--primary-dark)' }}>Monitoring Agro</h1>
+          <div className="login-logo">
+            <Leaf size={26} strokeWidth={2.4} />
+          </div>
+          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' }}>Monitoring Agro</h1>
           <div className="muted" style={{ fontSize: 13 }}>Dashboard admin kebun sawit</div>
         </div>
 
-        <form onSubmit={onSubmit}>
-          <div className="field">
-            <label className="label">Email</label>
-            <input
-              className="input"
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
               type="email"
               autoComplete="username"
               value={email}
@@ -44,10 +50,10 @@ export default function Login() {
               placeholder="manager1@barokah.test"
             />
           </div>
-          <div className="field">
-            <label className="label">Password</label>
-            <input
-              className="input"
+          <div className="space-y-1.5">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
               type="password"
               autoComplete="current-password"
               value={password}
@@ -56,11 +62,11 @@ export default function Login() {
             />
           </div>
 
-          {error ? <div className="error-box" style={{ marginBottom: 12 }}>{error}</div> : null}
+          {error ? <div className="error-box">{error}</div> : null}
 
-          <button className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Memproses…' : 'Masuk'}
-          </button>
+          </Button>
         </form>
 
         <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 18, marginBottom: 0 }}>

@@ -1,17 +1,35 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import {
+  LayoutDashboard, Sprout, Map, BarChart3, FlaskConical, Scale,
+  Database, Users, Clock, ShieldCheck, LogOut, Leaf, type LucideIcon,
+} from 'lucide-react';
 import { useAuth } from '@/lib/auth';
+import { Button } from '@/components/ui/button';
 
-const NAV = [
-  { to: '/', label: 'Ringkasan', icon: '▱', end: true },
-  { to: '/kegiatan', label: 'Kegiatan', icon: '🌴' },
-  { to: '/peta', label: 'Peta Sebaran', icon: '🗺' },
-  { to: '/produktivitas', label: 'Produktivitas', icon: '📊' },
-  { to: '/pemupukan', label: 'Pemupukan', icon: '🧪' },
-  { to: '/rekonsiliasi', label: 'Rekonsiliasi', icon: '⚖' },
-  { to: '/master', label: 'Data Master', icon: '🗂' },
-  { to: '/pengguna', label: 'Pengguna', icon: '👤' },
-  { to: '/laporan-terjadwal', label: 'Laporan Terjadwal', icon: '⏰' },
-  { to: '/sistem', label: 'Sistem', icon: '🛡' },
+type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean };
+type NavGroup = { section: string; items: NavItem[] };
+
+const NAV: NavGroup[] = [
+  {
+    section: 'Operasional',
+    items: [
+      { to: '/', label: 'Ringkasan', icon: LayoutDashboard, end: true },
+      { to: '/kegiatan', label: 'Kegiatan', icon: Sprout },
+      { to: '/peta', label: 'Peta Sebaran', icon: Map },
+      { to: '/produktivitas', label: 'Produktivitas', icon: BarChart3 },
+      { to: '/pemupukan', label: 'Pemupukan', icon: FlaskConical },
+      { to: '/rekonsiliasi', label: 'Rekonsiliasi', icon: Scale },
+    ],
+  },
+  {
+    section: 'Administrasi',
+    items: [
+      { to: '/master', label: 'Data Master', icon: Database },
+      { to: '/pengguna', label: 'Pengguna', icon: Users },
+      { to: '/laporan-terjadwal', label: 'Laporan Terjadwal', icon: Clock },
+      { to: '/sistem', label: 'Sistem', icon: ShieldCheck },
+    ],
+  },
 ];
 
 const TITLES: Record<string, { title: string; sub: string }> = {
@@ -36,23 +54,35 @@ export function Layout() {
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-dot" />
+          <div className="brand-dot">
+            <Leaf size={19} strokeWidth={2.4} />
+          </div>
           <div>
             <div className="brand-name">Monitoring Agro</div>
             <div className="brand-sub">Dashboard Kebun</div>
           </div>
         </div>
 
-        {NAV.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-          >
-            <span className="nav-ico">{item.icon}</span>
-            {item.label}
-          </NavLink>
+        {NAV.map((group) => (
+          <div key={group.section}>
+            <div className="nav-section">{group.section}</div>
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                >
+                  <span className="nav-ico">
+                    <Icon size={18} strokeWidth={2} />
+                  </span>
+                  {item.label}
+                </NavLink>
+              );
+            })}
+          </div>
         ))}
 
         <div className="sidebar-foot">
@@ -61,9 +91,10 @@ export function Layout() {
             <br />
             <span className="muted">{profile?.role ?? '—'}</span>
           </div>
-          <button className="btn btn-sm" style={{ width: '100%' }} onClick={signOut}>
+          <Button variant="outline" size="sm" className="w-full" onClick={signOut}>
+            <LogOut size={15} />
             Keluar
-          </button>
+          </Button>
         </div>
       </aside>
 

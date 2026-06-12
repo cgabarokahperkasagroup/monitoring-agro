@@ -1,5 +1,11 @@
-// Komponen UI dasar dashboard (tanpa lib eksternal).
+// Komponen UI tingkat-aplikasi (dipakai semua halaman dashboard).
+// Dibangun di atas primitif shadcn di components/ui/*. API dijaga stabil.
 import { useEffect, type CSSProperties, type ReactNode } from 'react';
+import { X } from 'lucide-react';
+import { Card as ShadCard } from '@/components/ui/card';
+import { Badge as ShadBadge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 export function Spinner() {
   return <span className="spinner" aria-label="memuat" />;
@@ -38,7 +44,7 @@ export function Modal({
         <div className="modal-head">
           <div className="modal-title">{title}</div>
           <button className="modal-close" onClick={onClose} aria-label="Tutup">
-            ✕
+            <X size={16} />
           </button>
         </div>
         <div className="modal-body">{children}</div>
@@ -49,7 +55,7 @@ export function Modal({
 
 type Tone = 'neutral' | 'ok' | 'info' | 'warn' | 'danger';
 export function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: Tone }) {
-  return <span className={`badge badge-${tone}`}>{children}</span>;
+  return <ShadBadge tone={tone}>{children}</ShadBadge>;
 }
 
 export function Card({
@@ -62,9 +68,9 @@ export function Card({
   style?: CSSProperties;
 }) {
   return (
-    <div className={`card ${className}`} style={style}>
+    <ShadCard className={cn('p-5', className)} style={style}>
       {children}
-    </div>
+    </ShadCard>
   );
 }
 
@@ -108,7 +114,7 @@ export function QueryState({
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="field">
-      <label className="label">{label}</label>
+      <Label className="mb-1.5">{label}</Label>
       {children}
     </div>
   );
