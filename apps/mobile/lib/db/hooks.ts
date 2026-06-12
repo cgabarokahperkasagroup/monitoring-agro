@@ -50,7 +50,7 @@ export function useRecentActivities(limit = 100) {
   return useQuery<ActivityRow>(
     `SELECT
         a.id, a.activity_type, a.activity_date, a.division_id, a.block_id,
-        a.status, a.notes, a.created_at,
+        a.status, a.notes, a.created_by, a.created_at,
         COALESCE(h.total_janjang, d.total_janjang) AS total_janjang,
         d.spb_number AS spb_number,
         b.code AS block_code,

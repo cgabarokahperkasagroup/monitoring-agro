@@ -6,10 +6,11 @@
 // =====================================================================
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useRecentActivities } from '@/lib/db/hooks';
+import { submitActivity } from '@/lib/db/write';
 import type { ActivityRow } from '@/lib/db/types';
 import { SyncBanner } from '@/lib/SyncBanner';
 import { Badge, Card, EmptyState } from '@/lib/ui';
@@ -23,11 +24,11 @@ function fmtDate(d: string): string {
 
 function statusTone(s: string | null): 'neutral' | 'ok' | 'warn' | 'info' {
   switch (s) {
-    case 'verified':
+    case 'approved':
       return 'ok';
     case 'submitted':
       return 'info';
-    case 'draft':
+    case 'rejected':
       return 'warn';
     default:
       return 'neutral';
@@ -36,10 +37,12 @@ function statusTone(s: string | null): 'neutral' | 'ok' | 'warn' | 'info' {
 
 function statusLabel(s: string | null): string {
   switch (s) {
-    case 'verified':
-      return 'Terverifikasi';
+    case 'approved':
+      return 'Disetujui';
     case 'submitted':
-      return 'Terkirim';
+      return 'Menunggu verifikasi';
+    case 'rejected':
+      return 'Ditolak';
     case 'draft':
       return 'Draft';
     default:
@@ -47,8 +50,19 @@ function statusLabel(s: string | null): string {
   }
 }
 
-function ActivityCard({ item }: { item: ActivityRow }) {
+function ActivityCard({
+  item,
+  userId,
+  onSubmit,
+}: {
+  item: ActivityRow;
+  userId?: string;
+  onSubmit: (item: ActivityRow) => void;
+}) {
   const isPanen = item.activity_type === 'panen';
+  // Pemilik boleh mengirim untuk verifikasi saat masih draft / ditolak.
+  const canSubmit =
+    !!userId && item.created_by === userId && (item.status === 'draft' || item.status === 'rejected');
   return (
     <Card style={{ marginBottom: space.md }}>
       <View style={styles.cardTop}>
@@ -68,6 +82,11 @@ function ActivityCard({ item }: { item: ActivityRow }) {
         {item.block_code ? ` · Blok ${item.block_code}` : ''}
       </Text>
       {item.notes ? <Text style={styles.cardNotes}>{item.notes}</Text> : null}
+      {canSubmit ? (
+        <Pressable style={styles.submitBtn} onPress={() => onSubmit(item)}>
+          <Text style={styles.submitText}>Kirim untuk verifikasi</Text>
+        </Pressable>
+      ) : null}
     </Card>
   );
 }
@@ -77,12 +96,32 @@ export default function DaftarKegiatan() {
   const { user, signOut } = useAuth();
   const { data: activities, isLoading } = useRecentActivities();
 
+  function onSubmit(item: ActivityRow) {
+    Alert.alert(
+      'Kirim untuk verifikasi?',
+      'Setelah dikirim, kegiatan menunggu persetujuan asisten/manajer dan tidak bisa diubah lagi.',
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Kirim',
+          onPress: async () => {
+            try {
+              await submitActivity(item.id);
+            } catch (e: any) {
+              Alert.alert('Gagal', e?.message ?? 'Tidak bisa mengirim.');
+            }
+          },
+        },
+      ],
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <FlatList
         data={activities ?? []}
         keyExtractor={(it) => it.id}
-        renderItem={({ item }) => <ActivityCard item={item} />}
+        renderItem={({ item }) => <ActivityCard item={item} userId={user?.id} onSubmit={onSubmit} />}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <View>
@@ -170,4 +209,12 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: font.lg, fontWeight: '800', color: colors.text },
   cardMeta: { fontSize: font.sm, color: colors.textMuted, marginTop: space.xs },
   cardNotes: { fontSize: font.sm, color: colors.textFaint, marginTop: space.sm },
+  submitBtn: {
+    marginTop: space.md,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: space.sm,
+    alignItems: 'center',
+  },
+  submitText: { color: colors.white, fontWeight: '800', fontSize: font.sm },
 });

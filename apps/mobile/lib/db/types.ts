@@ -46,6 +46,7 @@ export type ActivityRow = {
   block_id: string | null;
   status: string | null;
   notes: string | null;
+  created_by: string | null;
   created_at: string | null;
   // gabungan dari detail (lewat LEFT JOIN di query daftar)
   total_janjang: number | null;

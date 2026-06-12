@@ -12,6 +12,15 @@ import type { Block, Tph } from './types';
 
 const SOURCE = 'mobile';
 
+// Kirim kegiatan untuk verifikasi (draft/rejected -> submitted). Tulis lokal,
+// PowerSync upload; RLS hanya mengizinkan pemilik saat status draft/rejected.
+export async function submitActivity(activityId: string): Promise<void> {
+  await db.execute(
+    "UPDATE activities SET status = 'submitted', updated_at = ? WHERE id = ?",
+    [nowIso(), activityId],
+  );
+}
+
 // Sisipkan metadata foto (tabel attachments, disinkron) + antrian upload biner
 // (pending_uploads, local-only) dalam transaksi yang sama dengan kegiatan.
 function insertAttachments(
