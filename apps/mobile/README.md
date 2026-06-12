@@ -15,6 +15,29 @@ npm run android               # atau: npm run ios
 > Login pakai user uji, mis. `mandor1@barokah.test` (password lihat seed
 > `supabase/seed/101_provision_test_users.sql`).
 
+## Build APK untuk HP lapangan (EAS) — `eas.json`
+App ini **tidak bisa di Expo Go** (ada native module PowerSync), jadi distribusi ke
+mandor lewat **build APK**. Profil sudah disiapkan di `eas.json`:
+
+| Profil | Output | Untuk |
+|---|---|---|
+| `development` | APK dev-client | ngoding dengan native module (`expo start --dev-client`) |
+| `preview` | **APK** (internal) | uji lapangan / bagi ke HP mandor |
+| `production` | AAB (app-bundle) | rilis Play Store |
+
+```bash
+cd apps/mobile
+cp .env.example .env                       # isi kredensial
+npm install
+npm i -g eas-cli                           # sekali saja
+eas login                                  # akun Expo (gratis)
+eas init                                   # set extra.eas.projectId di app.json (sekali)
+eas build -p android --profile preview     # -> link unduh APK saat selesai
+```
+> Build berjalan di cloud Expo; tak perlu Android Studio. Untuk build lokal tanpa
+> akun Expo: `eas build --local` (butuh toolchain) atau `npx expo run:android`
+> (butuh Android SDK). Setelah `eas init`, commit perubahan `app.json` (projectId).
+
 ## Struktur
 ```
 app/
