@@ -23,6 +23,7 @@ export type ActivityFilters = {
   type?: 'all' | 'panen' | 'pengiriman';
   estateId?: string;
   divisionId?: string;
+  status?: string;
   from?: string;
   to?: string;
 };
@@ -184,6 +185,7 @@ export function useActivities(filters: ActivityFilters) {
       if (filters.type && filters.type !== 'all') q = q.eq('activity_type', filters.type);
       if (filters.estateId) q = q.eq('estate_id', filters.estateId);
       if (filters.divisionId) q = q.eq('division_id', filters.divisionId);
+      if (filters.status) q = q.eq('status', filters.status);
       if (filters.from) q = q.gte('activity_date', filters.from);
       if (filters.to) q = q.lte('activity_date', filters.to);
 

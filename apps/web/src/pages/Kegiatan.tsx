@@ -4,6 +4,7 @@ import { ActivityDetailModal } from '@/components/ActivityDetailModal';
 import { ExportButtons } from '@/components/ExportButtons';
 import { Badge, Field, QueryState } from '@/components/ui';
 import { daysAgoIso, fmtDate, n, todayIso } from '@/lib/format';
+import { ACTIVITY_STATUSES, activityStatusLabel, activityStatusTone } from '@/lib/status';
 import type { ExportColumn } from '@/lib/export';
 
 const KEGIATAN_COLUMNS: ExportColumn<ActivityRow>[] = [
@@ -23,6 +24,7 @@ export default function Kegiatan() {
   const [type, setType] = useState<ActivityFilters['type']>('all');
   const [estateId, setEstateId] = useState('');
   const [divisionId, setDivisionId] = useState('');
+  const [status, setStatus] = useState('');
   const [from, setFrom] = useState(daysAgoIso(30));
   const [to, setTo] = useState(todayIso());
   const [detail, setDetail] = useState<ActivityRow | null>(null);
@@ -35,7 +37,7 @@ export default function Kegiatan() {
     [divisions, estateId],
   );
 
-  const { data, isLoading, error } = useActivities({ type, estateId, divisionId, from, to });
+  const { data, isLoading, error } = useActivities({ type, estateId, divisionId, status, from, to });
   const rows = data ?? [];
 
   return (
@@ -69,6 +71,14 @@ export default function Kegiatan() {
               <option value="">Semua divisi</option>
               {divisionOptions.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Status">
+            <select className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="">Semua status</option>
+              {ACTIVITY_STATUSES.map((s) => (
+                <option key={s} value={s}>{activityStatusLabel(s)}</option>
               ))}
             </select>
           </Field>
@@ -123,7 +133,7 @@ export default function Kegiatan() {
                   <td className="num">{n(r.total_janjang)}</td>
                   <td className="num">{n(r.est_tonase)}</td>
                   <td>{r.spb_number ?? r.destination_pks ?? '—'}</td>
-                  <td className="muted">{r.status ?? '—'}</td>
+                  <td><Badge tone={activityStatusTone(r.status)}>{activityStatusLabel(r.status)}</Badge></td>
                   <td>{r.photo_count > 0 ? <Badge tone="neutral">📷 {r.photo_count}</Badge> : '—'}</td>
                 </tr>
               ))}

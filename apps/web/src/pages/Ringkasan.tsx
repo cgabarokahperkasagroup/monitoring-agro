@@ -7,6 +7,7 @@ import { ExportButtons } from '@/components/ExportButtons';
 import { Badge, Kpi, QueryState } from '@/components/ui';
 import { buildDailySeries } from '@/lib/daily';
 import { daysAgoIso, fmtDate, n, todayIso } from '@/lib/format';
+import { activityStatusLabel, activityStatusTone } from '@/lib/status';
 import { downloadReportPdf, type ExportColumn } from '@/lib/export';
 
 const RINGKASAN_COLUMNS: ExportColumn<ActivityRow>[] = [
@@ -155,7 +156,7 @@ export default function Ringkasan() {
                     <td>{r.division_name ?? '—'}</td>
                     <td>{r.block_code ?? '—'}</td>
                     <td className="num">{n(r.total_janjang)}</td>
-                    <td className="muted">{r.status ?? '—'}</td>
+                    <td><Badge tone={activityStatusTone(r.status)}>{activityStatusLabel(r.status)}</Badge></td>
                     <td>{r.photo_count > 0 ? <Badge tone="neutral">📷 {r.photo_count}</Badge> : '—'}</td>
                   </tr>
                 ))}
