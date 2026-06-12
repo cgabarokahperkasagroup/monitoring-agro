@@ -7,6 +7,7 @@
 //   npx expo install @supabase/supabase-js @react-native-async-storage/async-storage react-native-url-polyfill
 // =====================================================================
 import 'react-native-url-polyfill/auto';
+import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
@@ -25,6 +26,19 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     detectSessionInUrl: false,     // wajib false di React Native
   },
+});
+
+// Auto-refresh token mengikuti siklus hidup app (pola resmi Supabase RN).
+// autoRefreshToken hanya berjalan saat timer hidup; di RN timer perlu
+// dimulai/dihentikan manual mengikuti AppState. Tanpa ini, token bisa basi
+// saat app lama di background -> PowerSync menolak token -> banner "Offline"
+// muncul lagi padahal ada sinyal. Saat kembali 'active', token disegarkan.
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') {
+    supabase.auth.startAutoRefresh();
+  } else {
+    supabase.auth.stopAutoRefresh();
+  }
 });
 
 // Catatan offline-first:
