@@ -38,7 +38,7 @@ src/
     Produktivitas.tsx   bar chart per divisi (janjang) & top karyawan (output)
     Rekonsiliasi.tsx    pengiriman vs tonase final PKS (catat + status cocok/selisih)
     Pemupukan.tsx       realisasi vs rencana pemupukan + editor rencana (admin)
-    Master.tsx          estate, divisi, blok, karyawan (read-only)
+    Master.tsx          CRUD estate/divisi/blok/TPH/karyawan/material (admin/manajer)
     Pengguna.tsx        profil + role + cakupan akses (kelola untuk admin)
     Sistem.tsx          status sinkron perangkat + audit log (audit: admin)
 ```

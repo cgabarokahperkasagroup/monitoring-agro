@@ -11,7 +11,7 @@ function one<T>(v: T | T[] | null | undefined): T | null {
   return v ?? null;
 }
 
-export type Estate = { id: string; name: string; code: string };
+export type Estate = { id: string; name: string; code: string; organization_id: string };
 export type Division = { id: string; name: string; code: string; estate_id: string; organization_id: string };
 export type Block = { id: string; code: string; name: string; division_id: string; luas_ha: number | null };
 export type Employee = {
@@ -48,7 +48,7 @@ export function useEstates() {
   return useQuery({
     queryKey: ['estates'],
     queryFn: async (): Promise<Estate[]> => {
-      const { data, error } = await supabase.from('estates').select('id, name, code').order('name');
+      const { data, error } = await supabase.from('estates').select('id, name, code, organization_id').order('name');
       if (error) throw error;
       return (data ?? []) as Estate[];
     },
@@ -799,6 +799,18 @@ export function useReportRuns(limit = 50) {
         ...r,
         summary: Array.isArray(r.summary) ? r.summary : [],
       }));
+    },
+  });
+}
+
+// ---- Generic baris data master (untuk CRUD) ----
+export function useMasterRows(table: string, select: string, order: string) {
+  return useQuery({
+    queryKey: ['master', table],
+    queryFn: async (): Promise<any[]> => {
+      const { data, error } = await supabase.from(table).select(select).order(order);
+      if (error) throw error;
+      return (data ?? []) as any[];
     },
   });
 }

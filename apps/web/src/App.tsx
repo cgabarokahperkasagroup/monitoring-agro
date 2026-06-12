@@ -7,13 +7,13 @@ import { Spinner } from '@/components/ui';
 // Halaman berat/jarang -> lazy agar tidak membebani bundle utama.
 const Peta = lazy(() => import('@/pages/Peta'));
 const LaporanTerjadwal = lazy(() => import('@/pages/LaporanTerjadwal'));
+const Master = lazy(() => import('@/pages/Master'));
 import Login from '@/pages/Login';
 import Ringkasan from '@/pages/Ringkasan';
 import Kegiatan from '@/pages/Kegiatan';
 import Produktivitas from '@/pages/Produktivitas';
 import Pemupukan from '@/pages/Pemupukan';
 import Rekonsiliasi from '@/pages/Rekonsiliasi';
-import Master from '@/pages/Master';
 import Pengguna from '@/pages/Pengguna';
 import Sistem from '@/pages/Sistem';
 
@@ -55,7 +55,14 @@ export default function App() {
             </Suspense>
           }
         />
-        <Route path="/master" element={<Master />} />
+        <Route
+          path="/master"
+          element={
+            <Suspense fallback={<div className="loading"><Spinner /></div>}>
+              <Master />
+            </Suspense>
+          }
+        />
         <Route path="/pengguna" element={<Pengguna />} />
         <Route
           path="/laporan-terjadwal"
