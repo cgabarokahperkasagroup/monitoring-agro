@@ -29,6 +29,7 @@ Jalankan berurutan (tiap file = 1 migration, idempoten/aman diulang):
 | 020 | `020_auto_email.sql` | **Auto-email** setelah cron: pg_net + app_config (cron_secret) |
 | — | `powersync_sync_rules.yaml` | Dipasang di **PowerSync Dashboard**, bukan Postgres |
 | — | `functions/agro-email-report/` | Edge Function kirim laporan via **Resend** (set `RESEND_API_KEY`) |
+| — | `functions/agro-create-user/` | Edge Function buat akun pengguna (service role; gated admin grup/super admin) |
 
 > **Auto-email**: `run_scheduled_reports()` (pg_cron harian) membuat laporan lalu, bila
 > jadwal punya `email_recipients`, memanggil Edge Function via `pg_net` (header

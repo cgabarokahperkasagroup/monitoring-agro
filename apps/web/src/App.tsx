@@ -8,13 +8,13 @@ import { Spinner } from '@/components/ui';
 const Peta = lazy(() => import('@/pages/Peta'));
 const LaporanTerjadwal = lazy(() => import('@/pages/LaporanTerjadwal'));
 const Master = lazy(() => import('@/pages/Master'));
+const Pengguna = lazy(() => import('@/pages/Pengguna'));
 import Login from '@/pages/Login';
 import Ringkasan from '@/pages/Ringkasan';
 import Kegiatan from '@/pages/Kegiatan';
 import Produktivitas from '@/pages/Produktivitas';
 import Pemupukan from '@/pages/Pemupukan';
 import Rekonsiliasi from '@/pages/Rekonsiliasi';
-import Pengguna from '@/pages/Pengguna';
 import Sistem from '@/pages/Sistem';
 
 function Protected({ children }: { children: ReactNode }) {
@@ -63,7 +63,14 @@ export default function App() {
             </Suspense>
           }
         />
-        <Route path="/pengguna" element={<Pengguna />} />
+        <Route
+          path="/pengguna"
+          element={
+            <Suspense fallback={<div className="loading"><Spinner /></div>}>
+              <Pengguna />
+            </Suspense>
+          }
+        />
         <Route
           path="/laporan-terjadwal"
           element={
