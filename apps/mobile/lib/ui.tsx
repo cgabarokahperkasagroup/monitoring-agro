@@ -1,6 +1,7 @@
 // =====================================================================
-// Komponen UI dasar — tanpa dependensi eksternal (RN core saja).
-// Gaya: putih, bersih, target sentuh besar, kontras tinggi.
+// Komponen UI dasar — NativeWind (Tailwind RN). Gaya: putih, bersih,
+// dominan hijau sawit, target sentuh besar (min 52px), kontras tinggi.
+// API komponen tetap sama spt sebelumnya agar layar minim perubahan.
 // =====================================================================
 import React, { useMemo, useState } from 'react';
 import {
@@ -9,56 +10,51 @@ import {
   KeyboardTypeOptions,
   Modal,
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
   View,
-  ViewStyle,
 } from 'react-native';
-import { colors, font, radius, space, TOUCH } from './theme';
+import { colors } from './theme';
 
 // ----------------------------------------------------------------------
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+
+const BTN_BASE =
+  'min-h-[52px] flex-row items-center justify-center rounded-xl px-5 border active:opacity-80';
+const BTN_VARIANT: Record<ButtonVariant, { box: string; label: string; spinner: string }> = {
+  primary: { box: 'bg-primary border-primary', label: 'text-white', spinner: '#FFFFFF' },
+  secondary: { box: 'bg-white border-border', label: 'text-ink', spinner: colors.text },
+  ghost: { box: 'bg-transparent border-transparent', label: 'text-primary', spinner: colors.primary },
+  danger: { box: 'bg-white border-danger-soft', label: 'text-danger', spinner: colors.danger },
+};
+
 export function Button({
   title,
   onPress,
   variant = 'primary',
   loading,
   disabled,
-  style,
+  className = '',
 }: {
   title: string;
   onPress?: () => void;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  variant?: ButtonVariant;
   loading?: boolean;
   disabled?: boolean;
-  style?: ViewStyle;
+  className?: string;
 }) {
   const isDisabled = disabled || loading;
-  const palette = {
-    primary: { bg: colors.primary, fg: colors.white, border: colors.primary },
-    secondary: { bg: colors.white, fg: colors.text, border: colors.border },
-    ghost: { bg: 'transparent', fg: colors.primary, border: 'transparent' },
-    danger: { bg: colors.white, fg: colors.danger, border: colors.dangerSoft },
-  }[variant];
-
+  const v = BTN_VARIANT[variant];
   return (
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
-      style={({ pressed }) => [
-        styles.btn,
-        {
-          backgroundColor: palette.bg,
-          borderColor: palette.border,
-          opacity: isDisabled ? 0.5 : pressed ? 0.85 : 1,
-        },
-        style,
-      ]}
+      className={`${BTN_BASE} ${v.box} ${isDisabled ? 'opacity-50' : ''} ${className}`}
     >
       {loading ? (
-        <ActivityIndicator color={palette.fg} />
+        <ActivityIndicator color={v.spinner} />
       ) : (
-        <Text style={[styles.btnText, { color: palette.fg }]}>{title}</Text>
+        <Text className={`text-base font-bold ${v.label}`}>{title}</Text>
       )}
     </Pressable>
   );
@@ -77,18 +73,21 @@ export function Field({
   children: React.ReactNode;
 }) {
   return (
-    <View style={{ marginBottom: space.lg }}>
-      <Text style={styles.label}>
+    <View className="mb-4">
+      <Text className="mb-2 text-sm font-semibold text-ink">
         {label}
-        {required ? <Text style={{ color: colors.danger }}> *</Text> : null}
+        {required ? <Text className="text-danger"> *</Text> : null}
       </Text>
       {children}
-      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+      {hint ? <Text className="mt-1 text-xs text-muted">{hint}</Text> : null}
     </View>
   );
 }
 
 // ----------------------------------------------------------------------
+const INPUT_CLASS =
+  'min-h-[52px] rounded-xl border border-border bg-white px-4 text-base text-ink';
+
 export function TextField({
   value,
   onChangeText,
@@ -116,7 +115,8 @@ export function TextField({
       autoCapitalize={autoCapitalize}
       secureTextEntry={secureTextEntry}
       multiline={multiline}
-      style={[styles.input, multiline && { height: 96, textAlignVertical: 'top' }]}
+      className={`${INPUT_CLASS} ${multiline ? 'h-24 py-3' : ''}`}
+      textAlignVertical={multiline ? 'top' : 'center'}
     />
   );
 }
@@ -138,57 +138,52 @@ export function PickerField({
   title?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const selected = useMemo(
-    () => options.find((o) => o.value === value),
-    [options, value],
-  );
+  const selected = useMemo(() => options.find((o) => o.value === value), [options, value]);
 
   return (
     <>
       <Pressable
         onPress={() => setOpen(true)}
-        style={({ pressed }) => [styles.input, styles.pickerBtn, pressed && { opacity: 0.85 }]}
+        className={`${INPUT_CLASS} flex-row items-center justify-between active:opacity-80`}
       >
-        <Text style={{ color: selected ? colors.text : colors.textFaint, fontSize: font.md }}>
+        <Text className={`text-base ${selected ? 'text-ink' : 'text-faint'}`}>
           {selected ? selected.label : placeholder}
         </Text>
-        <Text style={{ color: colors.textFaint, fontSize: font.md }}>▾</Text>
+        <Text className="text-base text-faint">▾</Text>
       </Pressable>
 
       <Modal visible={open} animationType="slide" transparent onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.sheetBackdrop} onPress={() => setOpen(false)} />
-        <View style={styles.sheet}>
-          <View style={styles.sheetHandle} />
-          <Text style={styles.sheetTitle}>{title}</Text>
+        <Pressable className="flex-1 bg-black/35" onPress={() => setOpen(false)} />
+        <View className="rounded-t-2xl bg-white pt-2">
+          <View className="mb-2 h-1 w-10 self-center rounded-full bg-border" />
+          <Text className="px-5 py-2 text-lg font-bold text-ink">{title}</Text>
           {options.length === 0 ? (
-            <Text style={[styles.hint, { padding: space.lg }]}>
+            <Text className="p-5 text-sm text-muted">
               Belum ada data. Tunggu sinkron selesai atau hubungi admin.
             </Text>
           ) : (
             <FlatList
               data={options}
               keyExtractor={(o) => o.value}
+              style={{ maxHeight: 380 }}
               renderItem={({ item }) => (
                 <Pressable
                   onPress={() => {
                     onSelect(item.value);
                     setOpen(false);
                   }}
-                  style={({ pressed }) => [styles.sheetRow, pressed && { backgroundColor: colors.card }]}
+                  className="flex-row items-center border-t border-card px-5 py-3 active:bg-card"
                 >
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: font.md, color: colors.text }}>{item.label}</Text>
-                    {item.sub ? <Text style={styles.hint}>{item.sub}</Text> : null}
+                  <View className="flex-1">
+                    <Text className="text-base text-ink">{item.label}</Text>
+                    {item.sub ? <Text className="mt-1 text-xs text-muted">{item.sub}</Text> : null}
                   </View>
-                  {item.value === value ? (
-                    <Text style={{ color: colors.primary, fontSize: font.lg }}>✓</Text>
-                  ) : null}
+                  {item.value === value ? <Text className="text-lg text-primary">✓</Text> : null}
                 </Pressable>
               )}
-              style={{ maxHeight: 380 }}
             />
           )}
-          <Button title="Tutup" variant="secondary" onPress={() => setOpen(false)} style={{ margin: space.lg }} />
+          <Button title="Tutup" variant="secondary" onPress={() => setOpen(false)} className="m-5" />
         </View>
       </Modal>
     </>
@@ -196,90 +191,39 @@ export function PickerField({
 }
 
 // ----------------------------------------------------------------------
-export function Card({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
-  return <View style={[styles.card, style]}>{children}</View>;
+export function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <View className={`rounded-2xl border border-card-border bg-white p-5 ${className}`}>{children}</View>
+  );
 }
 
-export function Badge({ text, tone = 'neutral' }: { text: string; tone?: 'neutral' | 'ok' | 'warn' | 'info' }) {
-  const map = {
-    neutral: { bg: colors.card, fg: colors.textMuted },
-    ok: { bg: colors.primarySoft, fg: colors.primaryDark },
-    warn: { bg: colors.warnSoft, fg: colors.warn },
-    info: { bg: '#E0F2FE', fg: colors.accent },
-  }[tone];
+type BadgeTone = 'neutral' | 'ok' | 'warn' | 'info';
+const BADGE_TONE: Record<BadgeTone, string> = {
+  neutral: 'bg-card',
+  ok: 'bg-primary-soft',
+  warn: 'bg-warn-soft',
+  info: 'bg-accent-soft',
+};
+const BADGE_TEXT: Record<BadgeTone, string> = {
+  neutral: 'text-muted',
+  ok: 'text-primary-dark',
+  warn: 'text-warn',
+  info: 'text-accent',
+};
+
+export function Badge({ text, tone = 'neutral' }: { text: string; tone?: BadgeTone }) {
   return (
-    <View style={[styles.badge, { backgroundColor: map.bg }]}>
-      <Text style={{ color: map.fg, fontSize: font.xs, fontWeight: '600' }}>{text}</Text>
+    <View className={`self-start rounded-full px-3 py-1 ${BADGE_TONE[tone]}`}>
+      <Text className={`text-xs font-semibold ${BADGE_TEXT[tone]}`}>{text}</Text>
     </View>
   );
 }
 
 export function EmptyState({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <View style={styles.empty}>
-      <Text style={{ fontSize: font.lg, fontWeight: '600', color: colors.text, textAlign: 'center' }}>{title}</Text>
-      {subtitle ? (
-        <Text style={[styles.hint, { textAlign: 'center', marginTop: space.sm }]}>{subtitle}</Text>
-      ) : null}
+    <View className="items-center justify-center p-8">
+      <Text className="text-center text-lg font-semibold text-ink">{title}</Text>
+      {subtitle ? <Text className="mt-2 text-center text-sm text-muted">{subtitle}</Text> : null}
     </View>
   );
 }
-
-// ----------------------------------------------------------------------
-const styles = StyleSheet.create({
-  btn: {
-    minHeight: TOUCH,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: space.lg,
-  },
-  btnText: { fontSize: font.md, fontWeight: '700' },
-  label: { fontSize: font.sm, fontWeight: '600', color: colors.text, marginBottom: space.sm },
-  hint: { fontSize: font.xs, color: colors.textMuted, marginTop: space.xs },
-  input: {
-    minHeight: TOUCH,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.white,
-    paddingHorizontal: space.lg,
-    fontSize: font.md,
-    color: colors.text,
-  },
-  pickerBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,0.35)' },
-  sheet: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    paddingTop: space.sm,
-  },
-  sheetHandle: {
-    alignSelf: 'center',
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.border,
-    marginBottom: space.sm,
-  },
-  sheetTitle: { fontSize: font.lg, fontWeight: '700', color: colors.text, paddingHorizontal: space.lg, paddingVertical: space.sm },
-  sheetRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: space.md,
-    paddingHorizontal: space.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.card,
-  },
-  card: {
-    backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    padding: space.lg,
-  },
-  badge: { borderRadius: radius.pill, paddingHorizontal: space.md, paddingVertical: 4, alignSelf: 'flex-start' },
-  empty: { alignItems: 'center', justifyContent: 'center', padding: space.xxl },
-});

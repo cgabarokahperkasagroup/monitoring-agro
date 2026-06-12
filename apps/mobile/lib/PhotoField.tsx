@@ -4,10 +4,9 @@
 // =====================================================================
 import * as ImagePicker from 'expo-image-picker';
 import React from 'react';
-import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, Text, View } from 'react-native';
 import { newId } from './id';
 import type { LocalPhoto } from './photos/storage';
-import { colors, font, radius, space } from './theme';
 
 export function PhotoField({
   photos,
@@ -57,65 +56,41 @@ export function PhotoField({
 
   return (
     <View>
-      <View style={styles.thumbs}>
+      <View className="flex-row flex-wrap items-center gap-2">
         {photos.map((p) => (
-          <View key={p.id} style={styles.thumbWrap}>
-            <Image source={{ uri: p.uri }} style={styles.thumb} />
-            <Pressable onPress={() => remove(p.id)} style={styles.removeBadge} hitSlop={6}>
-              <Text style={styles.removeX}>✕</Text>
+          <View key={p.id} className="h-[76px] w-[76px]">
+            <Image source={{ uri: p.uri }} className="h-[76px] w-[76px] rounded-lg bg-card" />
+            <Pressable
+              onPress={() => remove(p.id)}
+              hitSlop={6}
+              className="absolute -right-1.5 -top-1.5 h-[22px] w-[22px] items-center justify-center rounded-full bg-danger"
+            >
+              <Text className="text-xs font-extrabold leading-[14px] text-white">✕</Text>
             </Pressable>
           </View>
         ))}
         {photos.length < max ? (
-          <View style={styles.addRow}>
-            <Pressable onPress={fromCamera} style={styles.addBtn}>
-              <Text style={styles.addIcon}>📷</Text>
-              <Text style={styles.addLabel}>Kamera</Text>
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={fromCamera}
+              className="h-[76px] w-[76px] items-center justify-center gap-0.5 rounded-lg border border-dashed border-border active:opacity-70"
+            >
+              <Text className="text-xl">📷</Text>
+              <Text className="text-xs font-semibold text-muted">Kamera</Text>
             </Pressable>
-            <Pressable onPress={fromGallery} style={styles.addBtn}>
-              <Text style={styles.addIcon}>🖼</Text>
-              <Text style={styles.addLabel}>Galeri</Text>
+            <Pressable
+              onPress={fromGallery}
+              className="h-[76px] w-[76px] items-center justify-center gap-0.5 rounded-lg border border-dashed border-border active:opacity-70"
+            >
+              <Text className="text-xl">🖼</Text>
+              <Text className="text-xs font-semibold text-muted">Galeri</Text>
             </Pressable>
           </View>
         ) : null}
       </View>
-      <Text style={styles.hint}>
+      <Text className="mt-2 text-xs text-faint">
         {photos.length}/{max} foto · opsional, dikompres & di-upload saat online.
       </Text>
     </View>
   );
 }
-
-const THUMB = 76;
-const styles = StyleSheet.create({
-  thumbs: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, alignItems: 'center' },
-  thumbWrap: { width: THUMB, height: THUMB },
-  thumb: { width: THUMB, height: THUMB, borderRadius: radius.sm, backgroundColor: colors.card },
-  removeBadge: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeX: { color: colors.white, fontSize: 12, fontWeight: '800', lineHeight: 14 },
-  addRow: { flexDirection: 'row', gap: space.sm },
-  addBtn: {
-    width: THUMB,
-    height: THUMB,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
-  addIcon: { fontSize: 22 },
-  addLabel: { fontSize: font.xs, color: colors.textMuted, fontWeight: '600' },
-  hint: { fontSize: font.xs, color: colors.textFaint, marginTop: space.sm },
-});

@@ -6,7 +6,7 @@
 // =====================================================================
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useRecentActivities } from '@/lib/db/hooks';
@@ -14,7 +14,6 @@ import { submitActivity } from '@/lib/db/write';
 import type { ActivityRow } from '@/lib/db/types';
 import { SyncBanner } from '@/lib/SyncBanner';
 import { Badge, Card, EmptyState } from '@/lib/ui';
-import { colors, font, radius, space } from '@/lib/theme';
 
 function fmtDate(d: string): string {
   // YYYY-MM-DD -> DD/MM/YYYY
@@ -64,27 +63,30 @@ function ActivityCard({
   const canSubmit =
     !!userId && item.created_by === userId && (item.status === 'draft' || item.status === 'rejected');
   return (
-    <Card style={{ marginBottom: space.md }}>
-      <View style={styles.cardTop}>
+    <Card className="mb-3">
+      <View className="mb-2 flex-row justify-between">
         <Badge text={isPanen ? '🌴 Panen' : '🚚 Pengiriman'} tone={isPanen ? 'ok' : 'info'} />
         <Badge text={statusLabel(item.status)} tone={statusTone(item.status)} />
       </View>
-      <Text style={styles.cardTitle}>
+      <Text className="text-lg font-extrabold text-ink">
         {isPanen
           ? `${item.total_janjang ?? 0} janjang`
           : item.spb_number
             ? `SPB ${item.spb_number}`
             : `${item.total_janjang ?? 0} janjang`}
       </Text>
-      <Text style={styles.cardMeta}>
+      <Text className="mt-1 text-sm text-muted">
         {fmtDate(item.activity_date)}
         {item.division_name ? ` · ${item.division_name}` : ''}
         {item.block_code ? ` · Blok ${item.block_code}` : ''}
       </Text>
-      {item.notes ? <Text style={styles.cardNotes}>{item.notes}</Text> : null}
+      {item.notes ? <Text className="mt-2 text-sm text-faint">{item.notes}</Text> : null}
       {canSubmit ? (
-        <Pressable style={styles.submitBtn} onPress={() => onSubmit(item)}>
-          <Text style={styles.submitText}>Kirim untuk verifikasi</Text>
+        <Pressable
+          onPress={() => onSubmit(item)}
+          className="mt-3 items-center rounded-xl bg-primary py-2 active:opacity-80"
+        >
+          <Text className="text-sm font-extrabold text-white">Kirim untuk verifikasi</Text>
         </Pressable>
       ) : null}
     </Card>
@@ -117,48 +119,52 @@ export default function DaftarKegiatan() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+    <SafeAreaView className="flex-1 bg-bg" edges={['top', 'left', 'right']}>
       <FlatList
         data={activities ?? []}
         keyExtractor={(it) => it.id}
         renderItem={({ item }) => <ActivityCard item={item} userId={user?.id} onSubmit={onSubmit} />}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
         ListHeaderComponent={
           <View>
-            <View style={styles.headerRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.hello}>Selamat datang,</Text>
-                <Text style={styles.user} numberOfLines={1}>
+            <View className="mb-4 flex-row items-center">
+              <View className="flex-1">
+                <Text className="text-sm text-muted">Selamat datang,</Text>
+                <Text className="text-lg font-extrabold text-ink" numberOfLines={1}>
                   {user?.email ?? 'Mandor'}
                 </Text>
               </View>
-              <Pressable onPress={signOut} style={styles.logout} hitSlop={8}>
-                <Text style={styles.logoutText}>Keluar</Text>
+              <Pressable
+                onPress={signOut}
+                hitSlop={8}
+                className="rounded-xl border border-border px-3 py-2 active:opacity-70"
+              >
+                <Text className="text-sm font-semibold text-ink">Keluar</Text>
               </Pressable>
             </View>
 
-            <View style={{ marginBottom: space.lg }}>
+            <View className="mb-4">
               <SyncBanner />
             </View>
 
-            <View style={styles.actions}>
+            <View className="mb-6 flex-row gap-3">
               <Pressable
-                style={({ pressed }) => [styles.action, styles.actionPanen, pressed && styles.pressed]}
                 onPress={() => router.push('/(app)/panen')}
+                className="min-h-[96px] flex-1 items-center justify-center gap-1 rounded-2xl bg-primary active:opacity-90"
               >
-                <Text style={styles.actionIcon}>🌴</Text>
-                <Text style={styles.actionText}>Input Panen</Text>
+                <Text className="text-3xl">🌴</Text>
+                <Text className="text-base font-extrabold text-white">Input Panen</Text>
               </Pressable>
               <Pressable
-                style={({ pressed }) => [styles.action, styles.actionKirim, pressed && styles.pressed]}
                 onPress={() => router.push('/(app)/pengiriman')}
+                className="min-h-[96px] flex-1 items-center justify-center gap-1 rounded-2xl bg-accent active:opacity-90"
               >
-                <Text style={styles.actionIcon}>🚚</Text>
-                <Text style={styles.actionText}>Pengiriman</Text>
+                <Text className="text-3xl">🚚</Text>
+                <Text className="text-base font-extrabold text-white">Pengiriman</Text>
               </Pressable>
             </View>
 
-            <Text style={styles.sectionTitle}>Kegiatan Terbaru</Text>
+            <Text className="mb-3 text-base font-bold text-ink">Kegiatan Terbaru</Text>
           </View>
         }
         ListEmptyComponent={
@@ -175,46 +181,3 @@ export default function DaftarKegiatan() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  listContent: { padding: space.lg, paddingBottom: space.xxl },
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: space.lg },
-  hello: { fontSize: font.sm, color: colors.textMuted },
-  user: { fontSize: font.lg, fontWeight: '800', color: colors.text },
-  logout: {
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  logoutText: { color: colors.text, fontWeight: '600', fontSize: font.sm },
-  actions: { flexDirection: 'row', gap: space.md, marginBottom: space.xl },
-  action: {
-    flex: 1,
-    minHeight: 96,
-    borderRadius: radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.xs,
-  },
-  actionPanen: { backgroundColor: colors.primary },
-  actionKirim: { backgroundColor: colors.accent },
-  pressed: { opacity: 0.9 },
-  actionIcon: { fontSize: 28 },
-  actionText: { color: colors.white, fontWeight: '800', fontSize: font.md },
-  sectionTitle: { fontSize: font.md, fontWeight: '700', color: colors.text, marginBottom: space.md },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: space.sm },
-  cardTitle: { fontSize: font.lg, fontWeight: '800', color: colors.text },
-  cardMeta: { fontSize: font.sm, color: colors.textMuted, marginTop: space.xs },
-  cardNotes: { fontSize: font.sm, color: colors.textFaint, marginTop: space.sm },
-  submitBtn: {
-    marginTop: space.md,
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: space.sm,
-    alignItems: 'center',
-  },
-  submitText: { color: colors.white, fontWeight: '800', fontSize: font.sm },
-});

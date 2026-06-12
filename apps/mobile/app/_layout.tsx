@@ -2,6 +2,7 @@
 // Root layout: provider Auth + PowerSync, lalu gerbang redirect
 // (belum login -> /login, sudah login -> /(app)).
 // =====================================================================
+import '../global.css'; // NativeWind: aktifkan utilitas Tailwind (className)
 import { PowerSyncContext } from '@powersync/react';
 import { StatusBar } from 'expo-status-bar';
 import { Stack, useRouter, useSegments } from 'expo-router';

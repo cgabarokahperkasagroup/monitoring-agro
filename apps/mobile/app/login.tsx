@@ -4,18 +4,10 @@
 // ke daftar kegiatan.
 // =====================================================================
 import React, { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { Button, Field, TextField } from '@/lib/ui';
-import { colors, font, space } from '@/lib/theme';
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -38,16 +30,25 @@ export default function Login() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView className="flex-1 bg-bg">
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <View style={styles.brand}>
-            <View style={styles.logoDot} />
-            <Text style={styles.title}>Monitoring Agro</Text>
-            <Text style={styles.subtitle}>Pencatatan kegiatan kebun — offline-first</Text>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View className="mb-10 items-center">
+            <View className="mb-4 h-20 w-20 items-center justify-center rounded-2xl border border-card-border bg-white">
+              <Image
+                source={require('../assets/logo-bpg.png')}
+                className="h-14 w-14"
+                resizeMode="contain"
+              />
+            </View>
+            <Text className="text-3xl font-extrabold text-primary-dark">Monitoring Agro</Text>
+            <Text className="mt-1 text-sm text-muted">Pencatatan kegiatan kebun — offline-first</Text>
           </View>
 
           <Field label="Email">
@@ -70,11 +71,13 @@ export default function Login() {
             />
           </Field>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? (
+            <Text className="mb-3 rounded-xl bg-danger-soft p-3 text-sm text-danger">{error}</Text>
+          ) : null}
 
-          <Button title="Masuk" onPress={onSubmit} loading={loading} style={{ marginTop: space.sm }} />
+          <Button title="Masuk" onPress={onSubmit} loading={loading} className="mt-2" />
 
-          <Text style={styles.note}>
+          <Text className="mt-8 text-center text-xs text-faint">
             Akun dibuat oleh admin. Hubungi admin grup bila lupa kata sandi.
           </Text>
         </ScrollView>
@@ -82,27 +85,3 @@ export default function Login() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: space.xl },
-  brand: { alignItems: 'center', marginBottom: space.xxl },
-  logoDot: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
-    marginBottom: space.lg,
-  },
-  title: { fontSize: font.xxl, fontWeight: '800', color: colors.primaryDark },
-  subtitle: { fontSize: font.sm, color: colors.textMuted, marginTop: space.xs },
-  error: {
-    color: colors.danger,
-    backgroundColor: colors.dangerSoft,
-    padding: space.md,
-    borderRadius: 10,
-    marginBottom: space.md,
-    fontSize: font.sm,
-  },
-  note: { fontSize: font.xs, color: colors.textFaint, textAlign: 'center', marginTop: space.xl },
-});

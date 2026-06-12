@@ -4,7 +4,7 @@
 // =====================================================================
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useDivisions, useTph } from '@/lib/db/hooks';
 import { num, saveDelivery } from '@/lib/db/write';
@@ -15,7 +15,6 @@ import type { LocalPhoto } from '@/lib/photos/storage';
 import { processPendingUploads } from '@/lib/photos/uploader';
 import { useDeviceCoords } from '@/lib/location';
 import { Card, Field, PickerField, TextField } from '@/lib/ui';
-import { colors, font, space } from '@/lib/theme';
 
 export default function PengirimanScreen() {
   const router = useRouter();
@@ -112,18 +111,18 @@ export default function PengirimanScreen() {
         />
       </Field>
 
-      <Card style={{ marginBottom: space.lg }}>
-        <Text style={styles.cardHead}>Surat Jalan</Text>
+      <Card className="mb-4">
+        <Text className="mb-3 text-base font-extrabold text-ink">Surat Jalan</Text>
         <Field label="Nomor SPB / surat jalan" required>
           <TextField value={spb} onChangeText={setSpb} placeholder="SPB-000123" autoCapitalize="characters" />
         </Field>
-        <View style={styles.row2}>
-          <View style={styles.col}>
+        <View className="flex-row gap-3">
+          <View className="flex-1">
             <Field label="Nopol kendaraan">
               <TextField value={plate} onChangeText={setPlate} placeholder="KT 1234 AB" autoCapitalize="characters" />
             </Field>
           </View>
-          <View style={styles.col}>
+          <View className="flex-1">
             <Field label="Jam berangkat">
               <TextField value={departTime} onChangeText={setDepartTime} placeholder="14:30" />
             </Field>
@@ -137,21 +136,21 @@ export default function PengirimanScreen() {
         </Field>
       </Card>
 
-      <Card style={{ marginBottom: space.lg }}>
-        <Text style={styles.cardHead}>Muatan</Text>
-        <View style={styles.row2}>
-          <View style={styles.col}>
+      <Card className="mb-4">
+        <Text className="mb-3 text-base font-extrabold text-ink">Muatan</Text>
+        <View className="flex-row gap-3">
+          <View className="flex-1">
             <Field label="Total janjang">
               <TextField value={totalJanjang} onChangeText={setTotalJanjang} keyboardType="number-pad" placeholder="0" />
             </Field>
           </View>
-          <View style={styles.col}>
+          <View className="flex-1">
             <Field label="Est. tonase muat (kg)">
               <TextField value={tonase} onChangeText={setTonase} keyboardType="decimal-pad" placeholder="0" />
             </Field>
           </View>
         </View>
-        <Text style={styles.hint}>
+        <Text className="text-xs text-muted">
           Tonase final dari timbangan pabrik diisi/direkonsiliasi belakangan.
         </Text>
       </Card>
@@ -161,7 +160,7 @@ export default function PengirimanScreen() {
       </Field>
 
       <Field label="Lokasi GPS (otomatis)">
-        <Text style={styles.gps}>
+        <Text className="text-sm text-muted">
           {gpsStatus === 'ok' && gps
             ? `📍 ${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)}`
             : gpsStatus === 'loading'
@@ -178,11 +177,3 @@ export default function PengirimanScreen() {
     </FormScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  cardHead: { fontSize: font.md, fontWeight: '800', color: colors.text, marginBottom: space.md },
-  row2: { flexDirection: 'row', gap: space.md },
-  col: { flex: 1 },
-  hint: { fontSize: font.xs, color: colors.textMuted },
-  gps: { fontSize: font.sm, color: colors.textMuted },
-});

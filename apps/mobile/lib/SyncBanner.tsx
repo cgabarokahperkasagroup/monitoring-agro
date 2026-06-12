@@ -4,8 +4,7 @@
 // =====================================================================
 import { useStatus } from '@powersync/react';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { colors, font, radius, space } from './theme';
+import { Text, View } from 'react-native';
 
 function timeAgo(iso?: Date | null): string {
   if (!iso) return 'belum pernah';
@@ -19,46 +18,38 @@ function timeAgo(iso?: Date | null): string {
   return `${Math.floor(hr / 24)} hari lalu`;
 }
 
+type Tone = { box: string; dot: string; text: string };
+const TONE: Record<'offline' | 'busy' | 'ok', Tone> = {
+  offline: { box: 'bg-warn-soft', dot: 'bg-warn', text: 'text-warn' },
+  busy: { box: 'bg-accent-soft', dot: 'bg-accent', text: 'text-accent' },
+  ok: { box: 'bg-primary-soft', dot: 'bg-primary', text: 'text-primary-dark' },
+};
+
 export function SyncBanner() {
   const status = useStatus();
   const connected = status?.connected ?? false;
   const uploading = status?.dataFlowStatus?.uploading ?? false;
   const downloading = status?.dataFlowStatus?.downloading ?? false;
 
-  let tone: { bg: string; fg: string; dot: string };
+  let tone: Tone;
   let label: string;
 
   if (!connected) {
-    tone = { bg: colors.warnSoft, fg: colors.warn, dot: colors.warn };
+    tone = TONE.offline;
     label = 'Offline — data tersimpan lokal';
   } else if (uploading || downloading) {
-    tone = { bg: '#E0F2FE', fg: colors.accent, dot: colors.accent };
+    tone = TONE.busy;
     label = uploading ? 'Mengirim perubahan…' : 'Menarik data…';
   } else {
-    tone = { bg: colors.primarySoft, fg: colors.primaryDark, dot: colors.primary };
+    tone = TONE.ok;
     label = 'Tersinkron';
   }
 
   return (
-    <View style={[styles.wrap, { backgroundColor: tone.bg }]}>
-      <View style={[styles.dot, { backgroundColor: tone.dot }]} />
-      <Text style={[styles.label, { color: tone.fg }]}>{label}</Text>
-      <Text style={[styles.sub, { color: tone.fg }]}>
-        sinkron {timeAgo(status?.lastSyncedAt)}
-      </Text>
+    <View className={`flex-row items-center rounded-full px-4 py-2 ${tone.box}`}>
+      <View className={`mr-2 h-2 w-2 rounded-full ${tone.dot}`} />
+      <Text className={`text-sm font-bold ${tone.text}`}>{label}</Text>
+      <Text className={`ml-auto text-xs opacity-90 ${tone.text}`}>sinkron {timeAgo(status?.lastSyncedAt)}</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: space.lg,
-    paddingVertical: space.sm,
-    borderRadius: radius.pill,
-  },
-  dot: { width: 8, height: 8, borderRadius: 4, marginRight: space.sm },
-  label: { fontSize: font.sm, fontWeight: '700' },
-  sub: { fontSize: font.xs, marginLeft: 'auto', opacity: 0.9 },
-});

@@ -5,7 +5,7 @@
 // =====================================================================
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useBlocks, useDivisions, useEmployees, useTph } from '@/lib/db/hooks';
 import { num, saveHarvest } from '@/lib/db/write';
@@ -16,7 +16,6 @@ import type { LocalPhoto } from '@/lib/photos/storage';
 import { processPendingUploads } from '@/lib/photos/uploader';
 import { useDeviceCoords } from '@/lib/location';
 import { Card, Field, PickerField, TextField } from '@/lib/ui';
-import { colors, font, space } from '@/lib/theme';
 
 type AttRow = { key: string; employee_id: string | null; qty: string };
 
@@ -152,8 +151,8 @@ export default function PanenScreen() {
         />
       </Field>
 
-      <Card style={{ marginBottom: space.lg }}>
-        <Text style={styles.cardHead}>Hasil Panen</Text>
+      <Card className="mb-4">
+        <Text className="mb-3 text-base font-extrabold text-ink">Hasil Panen</Text>
         <Field label="Total janjang (TBS)" required>
           <TextField value={totalJanjang} onChangeText={setTotalJanjang} keyboardType="number-pad" placeholder="0" />
         </Field>
@@ -163,25 +162,25 @@ export default function PanenScreen() {
         <Field label="Brondolan (kg)">
           <TextField value={brondolan} onChangeText={setBrondolan} keyboardType="decimal-pad" placeholder="0" />
         </Field>
-        <View style={styles.row2}>
-          <View style={styles.col}>
+        <View className="flex-row gap-3">
+          <View className="flex-1">
             <Field label="Buah mentah">
               <TextField value={buahMentah} onChangeText={setBuahMentah} keyboardType="number-pad" placeholder="0" />
             </Field>
           </View>
-          <View style={styles.col}>
+          <View className="flex-1">
             <Field label="Buah busuk">
               <TextField value={buahBusuk} onChangeText={setBuahBusuk} keyboardType="number-pad" placeholder="0" />
             </Field>
           </View>
         </View>
-        <View style={styles.row2}>
-          <View style={styles.col}>
+        <View className="flex-row gap-3">
+          <View className="flex-1">
             <Field label="Basis">
               <TextField value={basis} onChangeText={setBasis} keyboardType="decimal-pad" placeholder="0" />
             </Field>
           </View>
-          <View style={styles.col}>
+          <View className="flex-1">
             <Field label="Premi">
               <TextField value={premi} onChangeText={setPremi} keyboardType="decimal-pad" placeholder="0" />
             </Field>
@@ -189,19 +188,19 @@ export default function PanenScreen() {
         </View>
       </Card>
 
-      <Card style={{ marginBottom: space.lg }}>
-        <View style={styles.attHead}>
-          <Text style={styles.cardHead}>Kehadiran & Output (opsional)</Text>
-          <Pressable onPress={addAtt} hitSlop={8}>
-            <Text style={styles.addBtn}>+ Tambah</Text>
+      <Card className="mb-4">
+        <View className="mb-2 flex-row items-center justify-between">
+          <Text className="text-base font-extrabold text-ink">Kehadiran & Output (opsional)</Text>
+          <Pressable onPress={addAtt} hitSlop={8} className="active:opacity-60">
+            <Text className="text-sm font-bold text-primary">+ Tambah</Text>
           </Pressable>
         </View>
         {att.length === 0 ? (
-          <Text style={styles.attHint}>Tambah karyawan untuk mencatat janjang per orang.</Text>
+          <Text className="text-sm text-faint">Tambah karyawan untuk mencatat janjang per orang.</Text>
         ) : (
           att.map((r) => (
-            <View key={r.key} style={styles.attRow}>
-              <View style={{ flex: 1 }}>
+            <View key={r.key} className="mb-2 flex-row items-start gap-2">
+              <View className="flex-1">
                 <PickerField
                   title="Pilih Karyawan"
                   value={r.employee_id}
@@ -210,7 +209,7 @@ export default function PanenScreen() {
                   placeholder="Pilih karyawan…"
                 />
               </View>
-              <View style={{ width: 90 }}>
+              <View className="w-[90px]">
                 <TextField
                   value={r.qty}
                   onChangeText={(v) => setAttField(r.key, { qty: v })}
@@ -218,8 +217,12 @@ export default function PanenScreen() {
                   placeholder="jjg"
                 />
               </View>
-              <Pressable onPress={() => removeAtt(r.key)} hitSlop={8} style={styles.removeBtn}>
-                <Text style={{ color: colors.danger, fontSize: font.lg }}>✕</Text>
+              <Pressable
+                onPress={() => removeAtt(r.key)}
+                hitSlop={8}
+                className="h-[52px] w-9 items-center justify-center active:opacity-60"
+              >
+                <Text className="text-lg text-danger">✕</Text>
               </Pressable>
             </View>
           ))
@@ -231,7 +234,7 @@ export default function PanenScreen() {
       </Field>
 
       <Field label="Lokasi GPS (otomatis)">
-        <Text style={styles.gps}>
+        <Text className="text-sm text-muted">
           {gpsStatus === 'ok' && gps
             ? `📍 ${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)}`
             : gpsStatus === 'loading'
@@ -248,15 +251,3 @@ export default function PanenScreen() {
     </FormScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  cardHead: { fontSize: font.md, fontWeight: '800', color: colors.text, marginBottom: space.md },
-  row2: { flexDirection: 'row', gap: space.md },
-  col: { flex: 1 },
-  attHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.sm },
-  addBtn: { color: colors.primary, fontWeight: '700', fontSize: font.sm },
-  attHint: { fontSize: font.sm, color: colors.textFaint },
-  attRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm, marginBottom: space.sm },
-  removeBtn: { width: 36, height: 52, alignItems: 'center', justifyContent: 'center' },
-  gps: { fontSize: font.sm, color: colors.textMuted },
-});
