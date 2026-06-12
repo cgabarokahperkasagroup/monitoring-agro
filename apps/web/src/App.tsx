@@ -16,6 +16,7 @@ import Produktivitas from '@/pages/Produktivitas';
 import Pemupukan from '@/pages/Pemupukan';
 import Rekonsiliasi from '@/pages/Rekonsiliasi';
 import Sistem from '@/pages/Sistem';
+import SetPassword from '@/pages/SetPassword';
 
 function Protected({ children }: { children: ReactNode }) {
   const { session, initializing } = useAuth();
@@ -35,6 +36,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={session ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/set-password" element={<SetPassword />} />
       <Route
         element={
           <Protected>
