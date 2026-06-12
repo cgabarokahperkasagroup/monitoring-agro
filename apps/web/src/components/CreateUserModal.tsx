@@ -18,7 +18,7 @@ export function CreateUserModal({ open, onClose }: { open: boolean; onClose: () 
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState('mandor');
-  const [invite, setInvite] = useState(true);
+  const [invite, setInvite] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
 
@@ -26,6 +26,7 @@ export function CreateUserModal({ open, onClose }: { open: boolean; onClose: () 
     setEmail('');
     setFullName('');
     setRole('mandor');
+    setInvite(false);
     setErr(null);
     setResult(null);
   }
@@ -122,7 +123,7 @@ export function CreateUserModal({ open, onClose }: { open: boolean; onClose: () 
           </label>
           <p className="muted" style={{ fontSize: 12 }}>
             {invite
-              ? 'Email undangan dikirim via Resend; pengguna mengeklik tautan untuk mengatur kata sandi.'
+              ? 'Email undangan dikirim via Supabase Auth; pengguna mengeklik tautan untuk mengatur kata sandi.'
               : 'Password sementara dibuat otomatis & ditampilkan setelah akun dibuat.'}
             {' '}Cakupan akses (estate/divisi) diatur lewat "Kelola".
           </p>
